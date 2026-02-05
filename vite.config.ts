@@ -17,30 +17,6 @@ export default defineConfig(({ mode }) => ({
   },
   assetsInclude: ["**/*.lottie"],
   build: {
-    chunkSizeWarningLimit: 1600,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes("node_modules")) {
-            if (id.includes("react") || id.includes("react-dom") || id.includes("react-router-dom")) {
-              return "vendor-react";
-            }
-            if (id.includes("@radix-ui")) {
-              return "vendor-ui";
-            }
-            if (id.includes("framer-motion")) {
-              return "vendor-framer";
-            }
-            if (id.includes("lucide-react")) {
-              return "vendor-icons";
-            }
-            if (id.includes("i18next")) {
-              return "vendor-i18n";
-            }
-            return "vendor-utils";
-          }
-        },
-      },
-    },
+    chunkSizeWarningLimit: 2000,
   },
 }));
