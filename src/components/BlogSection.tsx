@@ -2,7 +2,7 @@ import { Calendar, ArrowRight, Clock, User, BookOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { format } from "date-fns";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { API_URL } from "@/config";
 
 interface BlogPost {
@@ -94,13 +94,13 @@ const BlogSection = () => {
                 From Our Blog
               </h2>
             </div>
-            <a
-              href="/blog"
+            <Link
+              to="/blog"
               className="inline-flex items-center text-spiritual-green font-medium hover:text-spiritual-green/80 transition-colors whitespace-nowrap group text-sm md:text-base"
             >
               View All Articles
               <ArrowRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
-            </a>
+            </Link>
           </div>
         </div>
 

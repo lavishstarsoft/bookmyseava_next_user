@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Menu, ShoppingCart, X, Heart, User, Home, Info, CalendarCheck, Package, Gift, HandHeart, Video, Truck, BookOpen, UserCircle, ChevronDown, MoreHorizontal, LogIn, Store, Users, UserPlus, Briefcase, Languages, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { Button } from "@/components/ui/button";
@@ -108,9 +109,9 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
                     {navLinks.map((link, index) => {
                       const Icon = link.icon;
                       return (
-                        <a
+                        <Link
                           key={link.name}
-                          href={link.href}
+                          to={link.href}
                           className="flex items-center gap-4 px-6 py-3.5 text-foreground hover:bg-gradient-to-r hover:from-maroon/10 hover:to-transparent transition-all duration-200 active:bg-maroon/20 ripple group border-b border-dotted border-maroon/20"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
@@ -120,7 +121,7 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
                             <Icon className="h-5 w-5 text-maroon group-hover:text-maroon-dark transition-colors flex-shrink-0" />
                           )}
                           <span className="font-medium text-[15px]">{link.name}</span>
-                        </a>
+                        </Link>
                       );
                     })}
 
@@ -220,81 +221,81 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
 
           {/* Logo - Fixed width container to prevent shifting */}
           <div className="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 flex items-center justify-center" style={{ width: '80px' }}>
-            <a href="/" className="flex items-center justify-center w-20 h-20 rounded-lg overflow-hidden">
+            <Link to="/" className="flex items-center justify-center w-20 h-20 rounded-lg overflow-hidden">
               {config?.logoUrl ? (
                 <img src={getImageUrl(config.logoUrl)} alt="Book My Seva" className="w-full h-full object-contain" />
               ) : (
                 <img src={logo} alt="Book My Seva" className="w-full h-full object-contain" />
               )}
-            </a>
+            </Link>
           </div>
 
           {/* Desktop Navigation - Responsive based on screen size */}
           <nav className="hidden md:flex items-center gap-0.5">
             {/* Home - Always visible on all desktop sizes with Temple Icon */}
-            <a
-              href={navLinks[0].href}
+            <Link
+              to={navLinks[0].href}
               className="px-2 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted whitespace-nowrap flex items-center gap-1.5"
             >
               <img src={templeIcon} alt="Home" className="h-5 w-5 md:h-5 md:w-5 lg:h-6 lg:w-6 object-contain" />
               <span className="hidden lg:inline">{navLinks[0].name}</span>
-            </a>
+            </Link>
 
             {/* About Us - Always visible on all desktop sizes */}
-            <a
-              href={navLinks[1].href}
+            <Link
+              to={navLinks[1].href}
               className="px-2 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted whitespace-nowrap"
             >
               {navLinks[1].name}
-            </a>
+            </Link>
 
             {/* Book A Pooja - Always visible on all desktop sizes */}
-            <a
-              href={navLinks[2].href}
+            <Link
+              to={navLinks[2].href}
               className="px-2 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted whitespace-nowrap"
             >
               {navLinks[2].name}
-            </a>
+            </Link>
 
             {/* Pooja Kits - Hidden on md, visible on lg+ */}
-            <a
-              href={navLinks[3].href}
+            <Link
+              to={navLinks[3].href}
               className="hidden lg:flex px-2 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted whitespace-nowrap"
             >
               {navLinks[3].name}
-            </a>
+            </Link>
 
             {/* Prasadam - Hidden on md, visible on lg+ */}
-            <a
-              href={navLinks[4].href}
+            <Link
+              to={navLinks[4].href}
               className="hidden lg:flex px-2 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted whitespace-nowrap"
             >
               {navLinks[4].name}
-            </a>
+            </Link>
 
             {/* Online Pooja - Visible only on lg screens and above */}
-            <a
-              href={navLinks[5].href}
+            <Link
+              to={navLinks[5].href}
               className="hidden lg:flex px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted whitespace-nowrap"
             >
               {navLinks[5].name}
-            </a>
+            </Link>
 
             {/* Home Service - Visible only on lg screens and above */}
-            <a
-              href={navLinks[6].href}
+            <Link
+              to={navLinks[6].href}
               className="hidden lg:flex px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted whitespace-nowrap"
             >
               {navLinks[6].name}
-            </a>
+            </Link>
 
             {/* Blog - Visible only on xl screens and above */}
-            <a
-              href={navLinks[7].href}
+            <Link
+              to={navLinks[7].href}
               className="hidden xl:flex px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted whitespace-nowrap"
             >
               {navLinks[7].name}
-            </a>
+            </Link>
 
             {/* More Dropdown - Shows hidden items based on screen size */}
             <DropdownMenu open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
@@ -311,62 +312,62 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
               <DropdownMenuContent align="end" className="w-48 bg-card border-border shadow-lg">
                 {/* Pooja Kits - Show in dropdown on md screens only */}
                 <DropdownMenuItem asChild className="lg:hidden">
-                  <a
-                    href={navLinks[3].href}
+                  <Link
+                    to={navLinks[3].href}
                     className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted transition-colors"
                     onClick={() => setIsMoreMenuOpen(false)}
                   >
                     <Package className="h-4 w-4 text-maroon" />
                     <span className="text-sm font-medium">{navLinks[3].name}</span>
-                  </a>
+                  </Link>
                 </DropdownMenuItem>
 
                 {/* Prasadam - Show in dropdown on md screens only */}
                 <DropdownMenuItem asChild className="lg:hidden">
-                  <a
-                    href={navLinks[4].href}
+                  <Link
+                    to={navLinks[4].href}
                     className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted transition-colors"
                     onClick={() => setIsMoreMenuOpen(false)}
                   >
                     <Gift className="h-4 w-4 text-maroon" />
                     <span className="text-sm font-medium">{navLinks[4].name}</span>
-                  </a>
+                  </Link>
                 </DropdownMenuItem>
 
                 {/* Online Pooja - Show in dropdown on md screens only */}
                 <DropdownMenuItem asChild className="lg:hidden">
-                  <a
-                    href={navLinks[5].href}
+                  <Link
+                    to={navLinks[5].href}
                     className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted transition-colors"
                     onClick={() => setIsMoreMenuOpen(false)}
                   >
                     <Video className="h-4 w-4 text-maroon" />
                     <span className="text-sm font-medium">{navLinks[5].name}</span>
-                  </a>
+                  </Link>
                 </DropdownMenuItem>
 
                 {/* Home Service - Show in dropdown on md screens only */}
                 <DropdownMenuItem asChild className="lg:hidden">
-                  <a
-                    href={navLinks[6].href}
+                  <Link
+                    to={navLinks[6].href}
                     className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted transition-colors"
                     onClick={() => setIsMoreMenuOpen(false)}
                   >
                     <Truck className="h-4 w-4 text-maroon" />
                     <span className="text-sm font-medium">{navLinks[6].name}</span>
-                  </a>
+                  </Link>
                 </DropdownMenuItem>
 
                 {/* Blog - Show in dropdown on md and lg screens */}
                 <DropdownMenuItem asChild className="xl:hidden">
-                  <a
-                    href={navLinks[7].href}
+                  <Link
+                    to={navLinks[7].href}
                     className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted transition-colors"
                     onClick={() => setIsMoreMenuOpen(false)}
                   >
                     <BookOpen className="h-4 w-4 text-maroon" />
                     <span className="text-sm font-medium">{navLinks[7].name}</span>
-                  </a>
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
