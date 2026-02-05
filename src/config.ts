@@ -1,4 +1,4 @@
-export const API_URL = "/api";
+export const API_URL = "http://46.225.29.165/api";
 
 export const getImageUrl = (path: string | undefined): string => {
     if (!path) return "";
