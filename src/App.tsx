@@ -18,7 +18,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <FloatingAudioPlayer />
-      <BrowserRouter>
+      <BrowserRouter basename="/bookmyseva">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/live-darshan" element={<LiveDarshan />} />
