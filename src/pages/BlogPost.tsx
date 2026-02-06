@@ -1,5 +1,6 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
+import { Helmet } from "react-helmet-async";
 import Sidebar from "@/components/Sidebar";
 import { Calendar, User, ArrowLeft, Share2, MessageCircle, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -237,6 +238,27 @@ const BlogPost = () => {
 
     return (
         <div className="min-h-screen bg-background">
+            <Helmet>
+                <title>{post.title} | Book My Seva</title>
+                <meta name="description" content={post.excerpt || `Read about ${post.title} on Book My Seva`} />
+                <link rel="canonical" href={window.location.href} />
+
+                {/* Open Graph / Facebook / WhatsApp */}
+                <meta property="og:type" content="article" />
+                <meta property="og:url" content={window.location.href} />
+                <meta property="og:title" content={post.title} />
+                <meta property="og:description" content={post.excerpt || `Read about ${post.title} on Book My Seva`} />
+                <meta property="og:site_name" content="Book My Seva" />
+                {post.image && <meta property="og:image" content={post.image} />}
+                {post.image && <meta property="og:image:width" content="1200" />}
+                {post.image && <meta property="og:image:height" content="630" />}
+
+                {/* Twitter */}
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content={post.title} />
+                <meta name="twitter:description" content={post.excerpt || `Read about ${post.title} on Book My Seva`} />
+                {post.image && <meta name="twitter:image" content={post.image} />}
+            </Helmet>
 
 
             <div className="container px-4 md:px-8 pt-8 pb-12">
