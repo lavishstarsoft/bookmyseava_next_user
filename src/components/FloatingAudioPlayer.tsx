@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { Music, Play, Pause, Volume2, VolumeX, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import audioFile from "@/assets/AUD-20260108-WA0008.mp3";
+import { useLocation } from "react-router-dom"; // Import useLocation
 
 import { useAppConfig } from "@/hooks/useAppConfig"; // Import hook
 
 const FloatingAudioPlayer = () => {
   const config = useAppConfig(); // Fetch config
+  const location = useLocation(); // Get location
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.7);
@@ -84,6 +86,9 @@ const FloatingAudioPlayer = () => {
       }
     }
   };
+
+  // Hide on Profile page
+  if (location.pathname === '/profile') return null;
 
   if (!showPlayer) return null;
 

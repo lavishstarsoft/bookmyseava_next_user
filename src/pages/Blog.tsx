@@ -1,23 +1,15 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import BottomNavigation from "@/components/BottomNavigation";
-import LiveStreamCard from "@/components/LiveStreamCard";
-import ChatbotWidget from "@/components/ChatbotWidget";
 import { BookOpen, Calendar, Clock, ArrowRight, Search, Sparkles, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import axios from "axios";
 import { format } from "date-fns";
 import { API_URL } from "@/config";
 
-import { useLiveCardState } from "@/hooks/useLiveCardState";
-
 const Blog = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("All");
-    const [isLiveCardDismissed, setIsLiveCardDismissed] = useLiveCardState();
     const resultsRef = useRef<HTMLDivElement>(null);
 
     // Dynamic Data State
@@ -98,11 +90,6 @@ const Blog = () => {
 
     return (
         <div className="min-h-screen bg-background">
-            <Header
-                isLiveCardDismissed={isLiveCardDismissed}
-                onLiveButtonClick={() => setIsLiveCardDismissed(false)}
-            />
-
             {/* Hero Section */}
             <section className="relative pt-20 pb-8 md:pt-20 md:pb-12 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-marigold/10 to-transparent" />
@@ -314,15 +301,6 @@ const Blog = () => {
 
                 </div>
             </section>
-
-            <LiveStreamCard
-                isDismissed={isLiveCardDismissed}
-                onDismissedChange={setIsLiveCardDismissed}
-            />
-            <ChatbotWidget />
-
-            <Footer />
-            <BottomNavigation />
         </div>
     );
 };

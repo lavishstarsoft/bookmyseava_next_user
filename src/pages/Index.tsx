@@ -1,7 +1,4 @@
 import { useState, useEffect } from "react";
-import { useLiveCardState } from "@/hooks/useLiveCardState";
-import Header from "@/components/Header";
-import BottomNavigation from "@/components/BottomNavigation";
 import MantraMarquee from "@/components/MantraMarquee";
 import HeroSection from "@/components/HeroSection";
 import FeaturedExcellence from "@/components/FeaturedExcellence";
@@ -10,9 +7,6 @@ import ServicesSection from "@/components/ServicesSection";
 import TrustBadges from "@/components/TrustBadges";
 import Testimonials from "@/components/Testimonials";
 import BlogSection from "@/components/BlogSection";
-import Footer from "@/components/Footer";
-import LiveStreamCard from "@/components/LiveStreamCard";
-import ChatbotWidget from "@/components/ChatbotWidget";
 import Sidebar, { Sloka } from "@/components/Sidebar";
 import axios from "axios";
 import { API_URL } from "@/config";
@@ -26,7 +20,6 @@ import playStore from "@/assets/play-store.png";
 
 
 const Index = () => {
-  const [isLiveCardDismissed, setIsLiveCardDismissed] = useLiveCardState();
   const [gitaSlokas, setGitaSlokas] = useState<Sloka[]>([]);
   const [kidsGitaSlokas, setKidsGitaSlokas] = useState<Sloka[]>([]);
 
@@ -48,12 +41,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <Header
-        isLiveCardDismissed={isLiveCardDismissed}
-        onLiveButtonClick={() => setIsLiveCardDismissed(false)}
-      />
-
       {/* Mantra Marquee */}
       <MantraMarquee />
 
@@ -240,22 +227,6 @@ const Index = () => {
           <Sidebar gitaSlokas={gitaSlokas} kidsGitaSlokas={kidsGitaSlokas} />
         </div>
       </div>
-
-      {/* Footer */}
-      <Footer />
-
-      {/* Floating Elements */}
-      <LiveStreamCard
-        isDismissed={isLiveCardDismissed}
-        onDismissedChange={setIsLiveCardDismissed}
-      />
-      <ChatbotWidget />
-
-      {/* Bottom Navigation (Mobile Only) */}
-      <BottomNavigation />
-
-      {/* Safe Area Padding for Mobile */}
-      <div className="h-16 md:hidden" />
     </div>
   );
 };

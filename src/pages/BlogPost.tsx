@@ -1,19 +1,13 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import BottomNavigation from "@/components/BottomNavigation";
 import Sidebar from "@/components/Sidebar";
-import LiveStreamCard from "@/components/LiveStreamCard";
-import ChatbotWidget from "@/components/ChatbotWidget";
-import { Calendar, Clock, User, ArrowLeft, Share2, Bookmark, Heart, MessageCircle, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { Calendar, User, ArrowLeft, Share2, MessageCircle, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
 import { format } from "date-fns";
 import ReadOnlyEditor from "@/components/editor/ReadOnlyEditor";
 import { API_URL } from "@/config";
 
-import { useLiveCardState } from "@/hooks/useLiveCardState";
 import {
     Popover,
     PopoverContent,
@@ -23,7 +17,6 @@ import {
 const BlogPost = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [isLiveCardDismissed, setIsLiveCardDismissed] = useLiveCardState();
     const [isShareOpen, setIsShareOpen] = useState(false);
     const { toast } = useToast();
     const footerRef = useRef<HTMLDivElement>(null);
@@ -154,10 +147,7 @@ const BlogPost = () => {
 
     return (
         <div className="min-h-screen bg-background">
-            <Header
-                isLiveCardDismissed={isLiveCardDismissed}
-                onLiveButtonClick={() => setIsLiveCardDismissed(false)}
-            />
+
 
             <div className="container px-4 md:px-8 pt-8 pb-12">
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 relative">
@@ -359,16 +349,7 @@ const BlogPost = () => {
                 <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform text-white md:text-maroon drop-shadow-md md:drop-shadow-none" />
             </Link>
 
-            <LiveStreamCard
-                isDismissed={isLiveCardDismissed}
-                onDismissedChange={setIsLiveCardDismissed}
-            />
-            <ChatbotWidget />
-
-            <div ref={footerRef}>
-                <Footer />
-            </div>
-            <BottomNavigation />
+            <div ref={footerRef} />
         </div >
     );
 };

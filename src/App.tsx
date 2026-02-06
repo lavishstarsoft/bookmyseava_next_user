@@ -9,6 +9,8 @@ import LiveDarshan from "./pages/LiveDarshan";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import FloatingAudioPlayer from "./components/FloatingAudioPlayer";
+import Profile from "./pages/Profile";
+import Layout from "./components/Layout";
 
 const queryClient = new QueryClient();
 
@@ -17,16 +19,19 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <FloatingAudioPlayer />
       <BrowserRouter basename="/">
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/live-darshan" element={<LiveDarshan />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:id" element={<BlogPost />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <FloatingAudioPlayer />
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/live-darshan" element={<LiveDarshan />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:id" element={<BlogPost />} />
+            <Route path="/profile" element={<Profile />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Layout>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

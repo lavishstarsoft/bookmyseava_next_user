@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, ShoppingCart, X, Heart, User, Home, Info, CalendarCheck, Package, Gift, HandHeart, Video, Truck, BookOpen, UserCircle, ChevronDown, MoreHorizontal, LogIn, Store, Users, UserPlus, Briefcase, Languages, Loader2 } from "lucide-react";
+import { Menu, ShoppingCart, X, Heart, User, Home, Info, CalendarCheck, Package, Gift, HandHeart, Video, Truck, BookOpen, UserCircle, ChevronDown, MoreHorizontal, LogIn, Store, Users, UserPlus, Briefcase, Languages, Loader2, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -40,6 +40,23 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const config = useAppConfig();
+
+  // Read user from localStorage
+  const [user, setUser] = useState(() => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    window.location.reload(); // Reload to clear any other state
+  };
 
   const navLinks = [
     { name: t('nav.home'), href: "/", icon: Home, isImage: true, imageSrc: templeIcon },
@@ -447,19 +464,41 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-card border-border shadow-xl">
-                <DropdownMenuLabel className="font-semibold text-foreground">
-                  {t('auth.myAccount')}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-
-                {/* Sign In */}
-                <DropdownMenuItem
-                  onClick={() => setIsAuthOpen(true)}
-                  className="cursor-pointer py-2.5 px-3"
-                >
-                  <LogIn className="mr-3 h-4 w-4 text-spiritual-green" />
-                  <span className="font-medium">{t('auth.signIn')}</span>
-                </DropdownMenuItem>
+                {user ? (
+                  <>
+                    <DropdownMenuLabel className="font-semibold text-foreground">
+                      {t('auth.hello')}, {user.name || 'User'}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="cursor-pointer py-2.5 px-3 group focus:bg-maroon focus:text-white transition-colors flex items-center">
+                        <User className="mr-3 h-4 w-4 text-maroon group-focus:text-white transition-colors" />
+                        <span className="font-medium">{t('auth.myProfile')}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="cursor-pointer py-2.5 px-3 text-red-500 group focus:bg-red-500 focus:text-white transition-colors"
+                    >
+                      <LogOut className="mr-3 h-4 w-4 group-focus:text-white transition-colors" />
+                      <span className="font-medium">{t('auth.logout')}</span>
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuLabel className="font-semibold text-foreground">
+                      {t('auth.myAccount')}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setIsAuthOpen(true)}
+                      className="cursor-pointer py-2.5 px-3"
+                    >
+                      <LogIn className="mr-3 h-4 w-4 text-spiritual-green" />
+                      <span className="font-medium">{t('auth.signIn')}</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
 
                 <DropdownMenuSeparator className="my-2" />
 

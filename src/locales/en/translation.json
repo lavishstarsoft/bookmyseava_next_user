@@ -24,7 +24,10 @@
     "signIn": "Sign In",
     "signOut": "Sign Out",
     "myAccount": "My Account",
-    "guestUser": "Guest User"
+    "guestUser": "Guest User",
+    "hello": "Hello",
+    "myProfile": "My Profile",
+    "logout": "Sign Out"
   },
   "buttons": {
     "bookNow": "Book Now",
