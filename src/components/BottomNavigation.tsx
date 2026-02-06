@@ -1,20 +1,33 @@
 import { Home, BookOpen, Package, Gift, User, ShoppingCart, Heart } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useLocation } from "react-router-dom";
 import AuthModal from "./AuthModal";
 
 const BottomNavigation = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState("home");
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const navItems = [
-    { id: "home", icon: Home, label: t('nav.home') },
-    { id: "favorite", icon: Heart, label: t('common.favorite') },
-    { id: "kits", icon: Package, label: t('nav.kits'), isCenter: true },
-    { id: "cart", icon: ShoppingCart, label: t('common.cart'), badge: 2 },
-    { id: "profile", icon: User, label: t('common.profile') },
+    { id: "home", icon: Home, label: t('nav.home'), path: "/" },
+    { id: "favorite", icon: Heart, label: t('common.favorite'), path: "/favorites" },
+    { id: "kits", icon: Package, label: t('nav.kits'), path: "/kits", isCenter: true },
+    { id: "cart", icon: ShoppingCart, label: t('common.cart'), path: "/cart", badge: 2 },
+    { id: "profile", icon: User, label: t('common.profile'), path: "/profile" },
   ];
+
+  const handleProfileClick = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      // User is logged in, navigate to profile page
+      navigate("/profile");
+    } else {
+      // User is not logged in, show auth modal
+      setIsAuthOpen(true);
+    }
+  };
 
   return (
     <>
@@ -24,7 +37,7 @@ const BottomNavigation = () => {
           <div className="flex items-center justify-around h-16 px-2 relative">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activeTab === item.id;
+              const isActive = location.pathname === item.path;
               const isCenter = item.isCenter;
 
               return (
@@ -32,9 +45,9 @@ const BottomNavigation = () => {
                   key={item.id}
                   onClick={() => {
                     if (item.id === "profile") {
-                      setIsAuthOpen(true);
+                      handleProfileClick();
                     } else {
-                      setActiveTab(item.id);
+                      navigate(item.path);
                     }
                   }}
                   className={`relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-200 ${isCenter ? "-mt-8" : ""
