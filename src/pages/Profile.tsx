@@ -98,25 +98,49 @@ const Profile = () => {
     const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
     const [addressForm, setAddressForm] = useState<Address>(initialAddressForm as Address);
 
-    // Load addresses from local storage
+    // Load addresses from local storage AND sync to backend
     useEffect(() => {
         const savedAddresses = localStorage.getItem("addresses");
         if (savedAddresses) {
-            setAddresses(JSON.parse(savedAddresses));
+            const parsedAddresses = JSON.parse(savedAddresses);
+            setAddresses(parsedAddresses);
+
+            // Auto-sync the first/default address to backend
+            const syncToBackend = async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    if (token && parsedAddresses.length > 0) {
+                        // Find default address or use first one
+                        const primaryAddr = parsedAddresses.find((a: Address) => a.isDefault) || parsedAddresses[0];
+
+                        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/customer-auth/profile`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                address: {
+                                    name: primaryAddr.name || '',
+                                    phone: primaryAddr.phone || '',
+                                    street: primaryAddr.houseNo + (primaryAddr.area ? `, ${primaryAddr.area}` : '') + (primaryAddr.landmark ? `, ${primaryAddr.landmark}` : ''),
+                                    city: primaryAddr.city,
+                                    state: primaryAddr.state,
+                                    zip: primaryAddr.pincode,
+                                    country: 'India'
+                                }
+                            })
+                        });
+                        console.log('[Profile] Address synced to backend');
+                    }
+                } catch (err) {
+                    console.error('[Profile] Failed to sync address:', err);
+                }
+            };
+            syncToBackend();
         } else {
-            // Default address for demo
-            setAddresses([{
-                id: "1",
-                label: "Home",
-                name: "Ashok Kumar",
-                houseNo: "Flat 402, Sai Residency",
-                area: "Kukatpally",
-                city: "Hyderabad",
-                state: "Telangana",
-                pincode: "500072",
-                phone: "+91 98765 43210",
-                isDefault: true
-            }]);
+            // No saved addresses, initialize empty
+            setAddresses([]);
         }
     }, []);
 
@@ -152,29 +176,67 @@ const Profile = () => {
         setIsEditing(false);
     };
 
-    // Load user from localStorage
+    // Load user from backend (Secure Check)
     useEffect(() => {
-        const loadUser = () => {
+        const verifyUserSession = async () => {
             try {
+                const token = localStorage.getItem("token");
                 const storedUser = localStorage.getItem("user");
+
+                if (!token) {
+                    throw new Error("No token found");
+                }
+
+                // If we have stored user, show it initially for speed (Optimistic UI)
                 if (storedUser) {
                     setUser(JSON.parse(storedUser));
+                }
+
+                // Verify with backend
+                const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/customer-auth/profile`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error("Token invalid or expired");
+                    }
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Update user with fresh data from server
+                setUser(data.user);
+
+                // Update local storage to keep it fresh
+                localStorage.setItem("user", JSON.stringify(data.user));
+
+            } catch (err: any) {
+                console.error("Session verification failed:", err);
+
+                // Only logout if it's explicitly an auth error
+                if (err.message === "Token invalid or expired" || err.message.includes("Token invalid")) {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    window.location.href = "/";
                 } else {
-                    // Fallback for design testing if no user is logged in
-                    setUser({
-                        name: "Ashok Kumar",
-                        email: "ashok.kumar@example.com",
-                        phone: "+91 98765 43210",
-                        joinDate: "January 2024"
+                    // For other errors (network, server 500), just keep the user logged in with cached data
+                    toast({
+                        variant: "destructive",
+                        title: "Sync Failed",
+                        description: "Could not sync latest profile data. Using cached version."
                     });
                 }
-            } catch (err) {
-                console.error(err);
             } finally {
                 setIsLoading(false);
             }
         };
-        loadUser();
+
+        verifyUserSession();
     }, []);
 
     const handleLogout = () => {
@@ -228,20 +290,60 @@ const Profile = () => {
         }
     };
 
-    const submitAddressForm = () => {
+    const submitAddressForm = async () => {
         if (!addressForm.name || !addressForm.houseNo || !addressForm.city || !addressForm.phone) {
             toast({ variant: "destructive", title: "Missing Fields", description: "Please fill in all required fields." });
             return;
         }
 
+        // Optimistic UI Update first
+        let newAddresses = [];
         if (editingAddressId) {
-            setAddresses(prev => prev.map(addr => addr.id === editingAddressId ? addressForm : addr));
+            newAddresses = addresses.map(addr => addr.id === editingAddressId ? addressForm : addr);
+        } else {
+            newAddresses = [...addresses, addressForm];
+        }
+        setAddresses(newAddresses);
+        setIsAddressModalOpen(false);
+
+        // API Call to Update Backend
+        try {
+            const token = localStorage.getItem('token'); // Assuming token is stored here
+            if (token) {
+                // We send the 'primary' or default address to backend profile
+                // For now, we just send the one currently being added/edited as the profile address
+                // Ideally, we might want to sync the whole list, but for Superadmin "derived address", sending the active one is good.
+
+                await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/customer-auth/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        address: {
+                            name: addressForm.name || '',
+                            phone: addressForm.phone || '',
+                            street: addressForm.houseNo + (addressForm.area ? `, ${addressForm.area}` : ''),
+                            city: addressForm.city,
+                            state: addressForm.state,
+                            zip: addressForm.pincode,
+                            country: 'India'
+                        }
+                    })
+                });
+                toast({ title: "Success", description: "Address synced to your profile." });
+            }
+        } catch (err) {
+            console.error("Failed to sync address", err);
+            // We don't revert UI because localStorage is still valid, just sync failed
+        }
+
+        if (editingAddressId) {
             toast({ title: "Address Updated", description: "Your address details have been updated." });
         } else {
-            setAddresses(prev => [...prev, addressForm]);
             toast({ title: "Address Added", description: "New address has been added to your book." });
         }
-        setIsAddressModalOpen(false);
     };
 
     const navItems = [

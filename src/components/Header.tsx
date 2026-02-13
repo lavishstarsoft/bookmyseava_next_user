@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { Menu, ShoppingCart, X, Heart, User, Home, Info, CalendarCheck, Package, Gift, HandHeart, Video, Truck, BookOpen, UserCircle, ChevronDown, MoreHorizontal, LogIn, Store, Users, UserPlus, Briefcase, Languages, Loader2, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Menu, ShoppingCart, X, Heart, User, Home, Info, CalendarCheck, Package, Gift, HandHeart, Video, Truck, BookOpen, UserCircle, ChevronDown, MoreHorizontal, LogIn, Store, Users, UserPlus, Briefcase, Languages, Loader2, LogOut, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"; // Check if this exists or just use sr-only class.
 // Actually, better to just use standard HTML or the components with sr-only class if they support it.
@@ -35,6 +36,7 @@ interface HeaderProps {
 
 const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) => {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [isPanchangamOpen, setIsPanchangamOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -51,11 +53,27 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
     }
   });
 
+  // Listen for auth changes (login/logout) to update UI without reload
+  useEffect(() => {
+    const handleAuthChange = () => {
+      try {
+        const storedUser = localStorage.getItem("user");
+        setUser(storedUser ? JSON.parse(storedUser) : null);
+      } catch {
+        setUser(null);
+      }
+    };
+
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
-    window.location.reload(); // Reload to clear any other state
+    window.dispatchEvent(new Event('auth-change'));
+    toast({ title: "Logged Out", description: "You have been logged out successfully" });
   };
 
   const navLinks = [
@@ -104,16 +122,40 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
                         <UserCircle className="w-8 h-8 text-secondary-foreground" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-foreground text-base">{t('auth.guestUser')}</p>
-                        <button
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setIsAuthOpen(true);
-                          }}
-                          className="text-xs text-maroon hover:text-maroon-dark font-medium transition-colors"
-                        >
-                          {t('auth.signIn')} →
-                        </button>
+                        {user ? (
+                          <>
+                            <p className="font-semibold text-foreground text-base truncate max-w-[150px]">{user.name || 'Bhakt'}</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <Link
+                                to="/profile"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="text-xs text-maroon hover:text-maroon-dark font-medium transition-colors"
+                              >
+                                {t('auth.myProfile')}
+                              </Link>
+                              <span className="text-muted-foreground/30">|</span>
+                              <button
+                                onClick={handleLogout}
+                                className="text-xs text-red-500 hover:text-red-600 font-medium transition-colors"
+                              >
+                                {t('auth.logout')}
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-semibold text-foreground text-base">{t('auth.guestUser')}</p>
+                            <button
+                              onClick={() => {
+                                setIsMobileMenuOpen(false);
+                                setIsAuthOpen(true);
+                              }}
+                              className="text-xs text-maroon hover:text-maroon-dark font-medium transition-colors"
+                            >
+                              {t('auth.signIn')} →
+                            </button>
+                          </>
+                        )}
                       </div>
                       <div className="flex-shrink-0 mt-5">
                         <LanguageSwitcher />
@@ -496,6 +538,21 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
                     >
                       <LogIn className="mr-3 h-4 w-4 text-spiritual-green" />
                       <span className="font-medium">{t('auth.signIn')}</span>
+                    </DropdownMenuItem>
+
+                    {/* NRI Login - Coming Soon */}
+                    <DropdownMenuItem
+                      onClick={() => {
+                        toast({
+                          title: "NRI Login",
+                          description: "International login coming soon!",
+                          variant: "default",
+                        });
+                      }}
+                      className="cursor-pointer py-2.5 px-3"
+                    >
+                      <Globe className="mr-3 h-4 w-4 text-blue-500" />
+                      <span className="font-medium">NRI Login</span>
                     </DropdownMenuItem>
                   </>
                 )}

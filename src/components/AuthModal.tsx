@@ -3,10 +3,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Mail, Lock, Phone, Eye, EyeOff } from "lucide-react";
+
 import { useState, useEffect } from "react";
 import { API_URL } from "../config";
 import { useToast } from "@/hooks/use-toast";
+
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { User, Mail, Lock, Phone, Eye, EyeOff, X, Globe, ArrowLeft } from "lucide-react";
 
 interface AuthModalProps {
     open: boolean;
@@ -15,7 +19,9 @@ interface AuthModalProps {
 
 const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     const { toast } = useToast();
+    const isMobile = useIsMobile();
     const [activeTab, setActiveTab] = useState("login");
+    const [isNriLogin, setIsNriLogin] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     // OTP Login states
@@ -124,6 +130,9 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
 
+                // Dispatch event to update Header state
+                window.dispatchEvent(new Event('auth-change'));
+
                 toast({
                     title: "Success",
                     description: "Login successful!",
@@ -131,7 +140,6 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 });
 
                 onOpenChange(false);
-                window.location.reload(); // Reload to update UI state
             } catch (error: any) {
                 // Check if error is due to user not found (unregistered)
                 if (error.message.includes('User not found') || error.message.includes('register first')) {
@@ -251,6 +259,9 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
 
+                // Dispatch event to update Header state
+                window.dispatchEvent(new Event('auth-change'));
+
                 toast({
                     title: "Success",
                     description: "Registration successful!",
@@ -258,7 +269,6 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 });
 
                 onOpenChange(false);
-                window.location.reload();
             } catch (error: any) {
                 toast({
                     title: "Verification Failed",
@@ -328,30 +338,17 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
         return () => document.removeEventListener('focusin', handleFocus);
     }, []);
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
-                className="sm:max-w-md bg-gradient-to-br from-marigold/20 via-marigold/10 to-marigold/5 border-maroon/30 animate-slide-up backdrop-blur-sm safe-bottom"
-                onInteractOutside={(e) => e.preventDefault()}
-            >
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 font-heading text-2xl text-maroon">
-                        <User className="h-6 w-6 text-maroon" />
-                        Welcome to Book My Seva
-                    </DialogTitle>
-                    <DialogDescription className="sr-only">
-                        Login or Register to access Book My Seva services
-                    </DialogDescription>
-                </DialogHeader>
+    const formContent = (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-card/50 border border-maroon/20">
+                <TabsTrigger value="login" className="data-[state=active]:bg-spiritual-green data-[state=active]:text-white data-[state=inactive]:text-maroon font-semibold transition-all">Login</TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-spiritual-green data-[state=active]:text-white data-[state=inactive]:text-maroon font-semibold transition-all">Register</TabsTrigger>
+            </TabsList>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 bg-card/50 border border-maroon/20">
-                        <TabsTrigger value="login" className="data-[state=active]:bg-spiritual-green data-[state=active]:text-white data-[state=inactive]:text-maroon font-semibold transition-all">Login</TabsTrigger>
-                        <TabsTrigger value="register" className="data-[state=active]:bg-spiritual-green data-[state=active]:text-white data-[state=inactive]:text-maroon font-semibold transition-all">Register</TabsTrigger>
-                    </TabsList>
-
-                    {/* Login Tab */}
-                    <TabsContent value="login" className="space-y-4 mt-4">
+            {/* Login Tab */}
+            <TabsContent value="login" className="space-y-4 mt-4">
+                {!isNriLogin ? (
+                    <div className="animate-in fade-in slide-in-from-left-4 duration-300">
                         {!otpSent ? (
                             <form onSubmit={handleSendOtp} className="space-y-4">
                                 <div className="space-y-2">
@@ -414,70 +411,153 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                                 </div>
                             </form>
                         )}
-                    </TabsContent>
 
-                    {/* Register Tab */}
-                    <TabsContent value="register" className="space-y-4 mt-4">
-                        {!regOtpSent ? (
-                            <form onSubmit={handleRegister} className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="register-name" className="flex items-center gap-2 text-maroon font-semibold"><User className="h-4 w-4 text-maroon" /> Full Name</Label>
-                                    <Input id="register-name" type="text" placeholder="Enter your full name" value={regName} onChange={(e) => setRegName(e.target.value)} required disabled={isLoading} className="border-maroon/30 focus:border-spiritual-green focus:ring-2 focus:ring-spiritual-green/20 bg-white/80" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="register-email" className="flex items-center gap-2 text-maroon font-semibold"><Mail className="h-4 w-4 text-maroon" /> Email</Label>
-                                    <Input id="register-email" type="email" placeholder="Enter your email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required disabled={isLoading} className="border-maroon/30 focus:border-spiritual-green focus:ring-2 focus:ring-spiritual-green/20 bg-white/80" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="register-phone" className="flex items-center gap-2 text-maroon font-semibold"><Phone className="h-4 w-4 text-maroon" /> Phone Number</Label>
-                                    <Input id="register-phone" type="tel" placeholder="Enter 10-digit mobile number" value={regMobileNumber} onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 10) setRegMobileNumber(value); }} required maxLength={10} disabled={isLoading} className="border-maroon/30 focus:border-spiritual-green focus:ring-2 focus:ring-spiritual-green/20 bg-white/80" />
-                                </div>
-                                <Button type="submit" className="w-full bg-spiritual-green hover:bg-spiritual-green/90 text-white font-semibold shadow-lg shadow-spiritual-green/30" disabled={!regName || !regEmail || regMobileNumber.length !== 10 || isLoading}>
-                                    {isLoading ? 'Sending...' : 'Send OTP'}
-                                </Button>
-                                <p className="text-xs text-center text-muted-foreground mt-4">
-                                    By creating an account, you agree to our <a href="#" className="text-maroon hover:underline">Terms of Service</a> and <a href="#" className="text-maroon hover:underline">Privacy Policy</a>
+                        {/* NRI Toggle */}
+                        <div className="relative my-6">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-maroon/20" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background px-2 text-muted-foreground font-medium">Or continue with</span>
+                            </div>
+                        </div>
+
+                        <Button
+                            variant="outline"
+                            className="w-full border-maroon/30 text-maroon hover:bg-maroon/5 hover:text-maroon gap-2"
+                            onClick={() => setIsNriLogin(true)}
+                        >
+                            <Globe className="h-4 w-4" /> NRI / International Login
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Button variant="ghost" size="icon" onClick={() => setIsNriLogin(false)} className="-ml-2 h-8 w-8 text-maroon/70 hover:text-maroon">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                            <h3 className="font-heading text-lg text-maroon">NRI Login</h3>
+                        </div>
+
+                        <div className="flex flex-col items-center justify-center py-8 text-center space-y-4 border border-dashed border-maroon/20 rounded-lg bg-maroon/5">
+                            <div className="bg-white p-3 rounded-full shadow-sm">
+                                <Globe className="h-6 w-6 text-maroon" />
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="font-semibold text-maroon">Coming Soon</h4>
+                                <p className="text-muted-foreground text-sm max-w-[240px] mx-auto">
+                                    We are working on bringing international login support to you.
                                 </p>
-                            </form>
-                        ) : (
-                            <form onSubmit={handleRegVerifyOtp} className="space-y-4">
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label className="flex items-center gap-2 text-maroon font-semibold"><Lock className="h-4 w-4 text-maroon" /> Enter OTP</Label>
-                                        <button type="button" onClick={resetRegOtpForm} className="text-xs text-spiritual-green hover:text-spiritual-green/80 font-medium transition-colors" disabled={isLoading}>Edit Details</button>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">OTP sent to +91 {regMobileNumber}</p>
-                                </div>
-                                <div className="flex gap-2 justify-center">
-                                    {regOtp.map((digit, index) => (
-                                        <Input
-                                            key={index}
-                                            id={`reg-otp-${index}`}
-                                            type="text"
-                                            inputMode="numeric"
-                                            maxLength={1}
-                                            value={digit}
-                                            onChange={(e) => handleRegOtpChange(index, e.target.value)}
-                                            onKeyDown={(e) => handleRegOtpKeyDown(index, e)}
-                                            disabled={isLoading}
-                                            className="w-12 h-12 text-center text-lg font-semibold border-border focus:border-maroon"
-                                        />
-                                    ))}
-                                </div>
-                                <Button type="submit" className="w-full bg-spiritual-green hover:bg-spiritual-green/90 text-white font-semibold shadow-lg shadow-spiritual-green/30" disabled={regOtp.join("").length !== 4 || isLoading}>
-                                    {isLoading ? 'Verifying...' : 'Verify & Create Account'}
-                                </Button>
-                                <div className="text-center">
-                                    {regResendTimer > 0 ? (
-                                        <p className="text-sm text-muted-foreground">Resend OTP in {regResendTimer}s</p>
-                                    ) : (
-                                        <button type="button" onClick={handleRegResendOtp} className="text-sm text-spiritual-green hover:text-spiritual-green/80 transition-colors font-semibold" disabled={isLoading}>Resend OTP</button>
-                                    )}
-                                </div>
-                            </form>
-                        )}
-                    </TabsContent>
-                </Tabs>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </TabsContent>
+
+            {/* Register Tab */}
+            < TabsContent value="register" className="space-y-4 mt-4" >
+                {!regOtpSent ? (
+                    <form onSubmit={handleRegister} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="register-name" className="flex items-center gap-2 text-maroon font-semibold"><User className="h-4 w-4 text-maroon" /> Full Name</Label>
+                            <Input id="register-name" type="text" placeholder="Enter your full name" value={regName} onChange={(e) => setRegName(e.target.value)} required disabled={isLoading} className="border-maroon/30 focus:border-spiritual-green focus:ring-2 focus:ring-spiritual-green/20 bg-white/80" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="register-email" className="flex items-center gap-2 text-maroon font-semibold"><Mail className="h-4 w-4 text-maroon" /> Email</Label>
+                            <Input id="register-email" type="email" placeholder="Enter your email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required disabled={isLoading} className="border-maroon/30 focus:border-spiritual-green focus:ring-2 focus:ring-spiritual-green/20 bg-white/80" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="register-phone" className="flex items-center gap-2 text-maroon font-semibold"><Phone className="h-4 w-4 text-maroon" /> Phone Number</Label>
+                            <Input id="register-phone" type="tel" placeholder="Enter 10-digit mobile number" value={regMobileNumber} onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 10) setRegMobileNumber(value); }} required maxLength={10} disabled={isLoading} className="border-maroon/30 focus:border-spiritual-green focus:ring-2 focus:ring-spiritual-green/20 bg-white/80" />
+                        </div>
+                        <Button type="submit" className="w-full bg-spiritual-green hover:bg-spiritual-green/90 text-white font-semibold shadow-lg shadow-spiritual-green/30" disabled={!regName || !regEmail || regMobileNumber.length !== 10 || isLoading}>
+                            {isLoading ? 'Sending...' : 'Send OTP'}
+                        </Button>
+                        <p className="text-xs text-center text-muted-foreground mt-4">
+                            By creating an account, you agree to our <a href="#" className="text-maroon hover:underline">Terms of Service</a> and <a href="#" className="text-maroon hover:underline">Privacy Policy</a>
+                        </p>
+                    </form>
+                ) : (
+                    <form onSubmit={handleRegVerifyOtp} className="space-y-4">
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="flex items-center gap-2 text-maroon font-semibold"><Lock className="h-4 w-4 text-maroon" /> Enter OTP</Label>
+                                <button type="button" onClick={resetRegOtpForm} className="text-xs text-spiritual-green hover:text-spiritual-green/80 font-medium transition-colors" disabled={isLoading}>Edit Details</button>
+                            </div>
+                            <p className="text-sm text-muted-foreground">OTP sent to +91 {regMobileNumber}</p>
+                        </div>
+                        <div className="flex gap-2 justify-center">
+                            {regOtp.map((digit, index) => (
+                                <Input
+                                    key={index}
+                                    id={`reg-otp-${index}`}
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={1}
+                                    value={digit}
+                                    onChange={(e) => handleRegOtpChange(index, e.target.value)}
+                                    onKeyDown={(e) => handleRegOtpKeyDown(index, e)}
+                                    disabled={isLoading}
+                                    className="w-12 h-12 text-center text-lg font-semibold border-border focus:border-maroon"
+                                />
+                            ))}
+                        </div>
+                        <Button type="submit" className="w-full bg-spiritual-green hover:bg-spiritual-green/90 text-white font-semibold shadow-lg shadow-spiritual-green/30" disabled={regOtp.join("").length !== 4 || isLoading}>
+                            {isLoading ? 'Verifying...' : 'Verify & Create Account'}
+                        </Button>
+                        <div className="text-center">
+                            {regResendTimer > 0 ? (
+                                <p className="text-sm text-muted-foreground">Resend OTP in {regResendTimer}s</p>
+                            ) : (
+                                <button type="button" onClick={handleRegResendOtp} className="text-sm text-spiritual-green hover:text-spiritual-green/80 transition-colors font-semibold" disabled={isLoading}>Resend OTP</button>
+                            )}
+                        </div>
+                    </form>
+                )}
+            </TabsContent >
+        </Tabs >
+    );
+
+    if (isMobile) {
+        return (
+            <Drawer open={open} onOpenChange={onOpenChange}>
+                <DrawerContent className="bg-gradient-to-br from-marigold/20 via-marigold/10 to-marigold/5 border-maroon/30 backdrop-blur-sm p-6 !pb-12 max-h-[85vh] [&>div.bg-muted]:hidden">
+                    <DrawerClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none">
+                        <X className="h-6 w-6 text-maroon" />
+                        <span className="sr-only">Close</span>
+                    </DrawerClose>
+                    <DrawerHeader className="text-left p-0 mb-4">
+                        <DrawerTitle className="flex items-center gap-2 font-heading text-2xl text-maroon">
+                            <User className="h-6 w-6 text-maroon" />
+                            Welcome to Book My Seva
+                        </DrawerTitle>
+                        <DrawerDescription className="sr-only">
+                            Login or Register to access services
+                        </DrawerDescription>
+                    </DrawerHeader>
+                    {formContent}
+                </DrawerContent>
+            </Drawer>
+        );
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent
+                className="sm:max-w-md bg-gradient-to-br from-marigold/20 via-marigold/10 to-marigold/5 border-maroon/30 animate-slide-up backdrop-blur-sm safe-bottom p-6 !pb-12 overflow-y-auto max-h-[85vh]"
+                onInteractOutside={(e) => e.preventDefault()}
+            >
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 font-heading text-2xl text-maroon">
+                        <User className="h-6 w-6 text-maroon" />
+                        Welcome to Book My Seva
+                    </DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Login or Register to access Book My Seva services
+                    </DialogDescription>
+                </DialogHeader>
+
+                {formContent}
             </DialogContent>
         </Dialog>
     );
