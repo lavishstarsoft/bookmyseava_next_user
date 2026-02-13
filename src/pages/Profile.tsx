@@ -36,6 +36,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { API_URL } from "@/config";
 
 // --- Mock Data ---
 interface UserProfile {
@@ -113,7 +114,7 @@ const Profile = () => {
                         // Find default address or use first one
                         const primaryAddr = parsedAddresses.find((a: Address) => a.isDefault) || parsedAddresses[0];
 
-                        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/customer-auth/profile`, {
+                        await fetch(`${API_URL}/v1/customer-auth/profile`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -193,7 +194,7 @@ const Profile = () => {
                 }
 
                 // Verify with backend
-                const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/customer-auth/profile`, {
+                const response = await fetch(`${API_URL}/v1/customer-auth/profile`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -314,7 +315,7 @@ const Profile = () => {
                 // For now, we just send the one currently being added/edited as the profile address
                 // Ideally, we might want to sync the whole list, but for Superadmin "derived address", sending the active one is good.
 
-                await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/customer-auth/profile`, {
+                await fetch(`${API_URL}/v1/customer-auth/profile`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
