@@ -218,8 +218,8 @@ const Profile = () => {
             } catch (err: any) {
                 console.error("Session verification failed:", err);
 
-                // Only logout if it's explicitly an auth error
-                if (err.message === "Token invalid or expired" || err.message.includes("Token invalid")) {
+                // Only logout if it's explicitly an auth error or no token exists
+                if (err.message === "Token invalid or expired" || err.message.includes("Token invalid") || err.message === "No token found") {
                     localStorage.removeItem("token");
                     localStorage.removeItem("user");
                     window.location.href = "/";
