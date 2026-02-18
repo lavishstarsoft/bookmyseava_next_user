@@ -2,7 +2,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import Sidebar from "@/components/Sidebar";
-import { Calendar, User, ArrowLeft, Share2, MessageCircle, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { Calendar, User, ArrowLeft, Share2, MessageCircle, ArrowRight, Loader2, Sparkles, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
 import { format } from "date-fns";
@@ -24,6 +24,7 @@ const BlogPost = () => {
     const { toast } = useToast();
     const footerRef = useRef<HTMLDivElement>(null);
     const [isFooterVisible, setIsFooterVisible] = useState(false);
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
     // Calculate dropdown position based on available space
     const handleShareClick = () => {
@@ -274,12 +275,23 @@ const BlogPost = () => {
 
                             {/* Main Article Image */}
                             {post.image && (
-                                <div className="rounded-2xl overflow-hidden shadow-xl aspect-video mb-6 border border-border/50">
-                                    <img
-                                        src={post.image}
-                                        alt={post.title}
-                                        className="w-full h-full object-cover"
-                                    />
+                                <div
+                                    className="relative mb-6 group cursor-zoom-in md:float-right md:ml-8 md:mb-4 md:max-w-[400px] w-full"
+                                    onClick={() => setIsLightboxOpen(true)}
+                                >
+                                    <div className="rounded-2xl overflow-hidden shadow-lg border border-border/50 transition-transform duration-300 group-hover:scale-[1.02]">
+                                        <img
+                                            src={post.image}
+                                            alt={post.title}
+                                            className="w-full h-auto object-cover max-h-[300px] md:max-h-[400px]"
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                                            <Sparkles className="text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 drop-shadow-lg" />
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground mt-2 text-center italic md:text-right px-2">
+                                        Click to enlarge image
+                                    </p>
                                 </div>
                             )}
 
@@ -483,6 +495,26 @@ const BlogPost = () => {
             >
                 <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform text-white md:text-maroon drop-shadow-md md:drop-shadow-none" />
             </Link>
+
+            {/* Image Lightbox */}
+            {isLightboxOpen && post.image && (
+                <div
+                    className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-300"
+                    onClick={() => setIsLightboxOpen(false)}
+                >
+                    <button
+                        className="absolute top-6 right-6 text-white/70 hover:text-white p-2 rounded-full bg-white/10 transition-colors"
+                        onClick={() => setIsLightboxOpen(false)}
+                    >
+                        <X className="w-8 h-8" />
+                    </button>
+                    <img
+                        src={post.image}
+                        alt={post.title}
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+                    />
+                </div>
+            )}
 
             <div ref={footerRef} />
         </div >
