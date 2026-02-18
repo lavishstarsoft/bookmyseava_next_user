@@ -6,6 +6,8 @@ import { API_URL } from "@/config";
 import { format } from "date-fns";
 
 interface PanchangamData {
+  samvatsaram: string;
+  maasam: string;
   tithi: string;
   nakshatra: string;
   yoga: string;
@@ -53,6 +55,8 @@ const PanchangamModal = ({ open, onOpenChange }: PanchangamModalProps) => {
 
   // Fallback data when API returns nothing
   const displayData = data || {
+    samvatsaram: "Shri Vishvavasu",
+    maasam: "Magha Maasam",
     tithi: "Data not available",
     nakshatra: "Data not available",
     yoga: "—",
@@ -83,13 +87,30 @@ const PanchangamModal = ({ open, onOpenChange }: PanchangamModalProps) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Date Display - White Card */}
-            <div className="text-center p-4 bg-white rounded-xl shadow-md border border-[#8D0303]/10">
-              <p className="text-sm text-[#8D0303]/70 font-medium">{dayNames[today.getDay()]}</p>
-              <p className="text-4xl font-heading font-bold text-[#8D0303]">{today.getDate()}</p>
-              <p className="text-sm text-[#8D0303]/70 font-medium">
-                {monthNames[today.getMonth()]} {today.getFullYear()}
-              </p>
+            {/* Beautiful Redesigned Header Box */}
+            <div className="bg-white rounded-2xl p-5 shadow-xl border-2 border-[#8D0303]/20 relative overflow-hidden">
+              <div className="relative z-10 text-center">
+                <p className="text-[#8D0303] font-bold text-lg md:text-xl mb-0.5 tracking-tight">
+                  {displayData.samvatsaram.toLowerCase().includes("nama samvatsaram")
+                    ? displayData.samvatsaram
+                    : `${displayData.samvatsaram} Nama Samvatsaram`}
+                </p>
+                <p className="text-[#8D0303]/80 font-semibold text-base mb-3">
+                  {displayData.maasam}
+                </p>
+
+                <div className="flex flex-col items-center">
+                  <div className="bg-[#8D0303] text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg mb-2">
+                    <span className="text-xl font-bold">{today.getDate()}</span>
+                  </div>
+                  <div className="leading-tight">
+                    <p className="text-[#8D0303] font-bold text-base uppercase">{dayNames[today.getDay()]}</p>
+                    <p className="text-[#8D0303]/70 font-medium text-xs">
+                      {monthNames[today.getMonth()]} {today.getFullYear()}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Panchangam Details - White Cards Grid */}

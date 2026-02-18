@@ -142,27 +142,32 @@ const PanchangamSection = () => {
                 <div className="grid md:grid-cols-[1fr,auto] gap-4 md:gap-6">
                     {/* Left Side - Panchangam Details */}
                     <div className="space-y-4">
-                        {/* Date Card */}
-                        <div className="bg-white border-2 border-[#8D0303]/10 rounded-xl p-4 shadow-md">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-[#8D0303]/10 rounded-lg p-3 flex items-center justify-center min-w-[70px]">
-                                    <div className="text-center">
-                                        <Calendar className="h-5 w-5 text-[#8D0303] mx-auto mb-1" />
-                                        <p className="text-2xl font-bold text-[#8D0303]">{today.getDate()}</p>
+                        {/* Beautiful Redesigned Header Box */}
+                        <div className="bg-white border-2 border-[#8D0303]/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+                            {/* Decorative Corner */}
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-[#8D0303]/10 to-transparent rounded-bl-3xl" />
+
+                            <div className="relative z-10 text-center">
+                                <p className="text-[#8D0303] font-bold text-xl md:text-2xl mb-1 tracking-wide">
+                                    {displayData.samvatsaram.toLowerCase().includes("nama samvatsaram")
+                                        ? displayData.samvatsaram
+                                        : `${displayData.samvatsaram} Nama Samvatsaram`}
+                                </p>
+                                <p className="text-[#8D0303]/80 font-semibold text-lg mb-4">
+                                    {displayData.maasam}
+                                </p>
+
+                                <div className="flex flex-col items-center justify-center">
+                                    <div className="bg-[#8D0303] text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg mb-2 ring-4 ring-[#8D0303]/10">
+                                        <span className="text-2xl font-bold">{today.getDate()}</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-[#8D0303] font-bold text-lg uppercase tracking-tight">{englishDays[today.getDay()]}</p>
+                                        <p className="text-[#8D0303]/70 font-medium text-sm">
+                                            {monthNames[today.getMonth()]} {today.getFullYear()}
+                                        </p>
                                     </div>
                                 </div>
-                                <div>
-                                    <p className="text-[#8D0303]/70 text-sm font-medium">{englishDays[today.getDay()]}</p>
-                                    <p className="text-[#8D0303] font-semibold">{monthNames[today.getMonth()]} {today.getFullYear()}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Panchangam Grid */}
-                        <div className="grid grid-cols-1 gap-3">
-                            <div className="bg-white border-2 border-[#8D0303]/10 rounded-xl p-4 shadow-md text-center">
-                                <p className="text-[#8D0303] font-bold text-lg mb-1">{displayData.samvatsaram}</p>
-                                <p className="text-[#8D0303]/80 font-semibold">{displayData.maasam}</p>
                             </div>
                         </div>
 
