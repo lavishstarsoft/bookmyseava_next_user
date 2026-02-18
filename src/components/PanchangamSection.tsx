@@ -8,6 +8,8 @@ import FestivalBookingModal from "./FestivalBookingModal";
 import { toast } from "sonner";
 
 interface PanchangamData {
+    samvatsaram: string;
+    maasam: string;
     tithi: string;
     nakshatra: string;
     yoga: string;
@@ -100,6 +102,8 @@ const PanchangamSection = () => {
 
     // Use fetched data or fallbacks when no data from backend
     const displayData = data || {
+        samvatsaram: "Shri Vishvavasu",
+        maasam: "Magha Maasam",
         tithi: "Data not available",
         nakshatra: "Data not available",
         yoga: "—",
@@ -155,6 +159,13 @@ const PanchangamSection = () => {
                         </div>
 
                         {/* Panchangam Grid */}
+                        <div className="grid grid-cols-1 gap-3">
+                            <div className="bg-white border-2 border-[#8D0303]/10 rounded-xl p-4 shadow-md text-center">
+                                <p className="text-[#8D0303] font-bold text-lg mb-1">{displayData.samvatsaram}</p>
+                                <p className="text-[#8D0303]/80 font-semibold">{displayData.maasam}</p>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-3">
                             <PanchangamItem icon={<Calendar className="h-4 w-4" />} label="Tithi" value={displayData.tithi} />
                             <PanchangamItem icon={<Star className="h-4 w-4" />} label="Nakshatra" value={displayData.nakshatra} />
