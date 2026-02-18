@@ -102,7 +102,7 @@ const Blog = () => {
                             <Sparkles className="w-4 h-4 text-marigold animate-pulse" />
                             Sacred Knowledge
                         </span>
-                        <h1 className="font-heading text-4xl md:text-6xl font-bold text-maroon-dark mb-6 leading-tight">
+                        <h1 className="font-teluguHeading text-4xl md:text-6xl font-bold text-maroon-dark mb-6 leading-tight">
                             Divine Knowledge Center
                         </h1>
                         <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
@@ -144,7 +144,7 @@ const Blog = () => {
 
                     {/* All Posts Grid */}
                     <div className="mb-8" ref={resultsRef}>
-                        <h3 className="font-heading text-2xl md:text-3xl font-bold text-foreground mb-8 text-center md:text-left pt-2">
+                        <h3 className="font-teluguHeading text-2xl md:text-3xl font-bold text-foreground mb-8 text-center md:text-left pt-2">
                             {searchTerm || selectedCategory !== "All" ? "Search Results" : "Latest Articles"}
                         </h3>
 
@@ -195,11 +195,11 @@ const Blog = () => {
                                                 </span>
                                             </div>
 
-                                            <h3 className="font-heading text-xl font-bold text-foreground mb-3 leading-tight group-hover:text-maroon transition-colors line-clamp-2">
+                                            <h3 className="font-teluguHeading text-xl font-bold text-foreground mb-3 leading-tight group-hover:text-maroon transition-colors line-clamp-2">
                                                 {post.title}
                                             </h3>
 
-                                            <p className="text-muted-foreground text-sm line-clamp-3 mb-6 leading-relaxed flex-1">
+                                            <p className="font-teluguBody text-muted-foreground text-sm line-clamp-3 mb-6 leading-relaxed flex-1">
                                                 {post.excerpt || "No summary available."}
                                             </p>
 
@@ -280,7 +280,7 @@ const Blog = () => {
 
                         <div className="relative z-10 max-w-2xl mx-auto">
                             <BookOpen className="w-12 h-12 text-marigold mx-auto mb-6 opacity-90" />
-                            <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">Stay Connected to the Divine</h2>
+                            <h2 className="font-teluguHeading text-3xl md:text-4xl font-bold mb-4">Stay Connected to the Divine</h2>
                             <p className="text-white/80 mb-8 text-lg">
                                 Subscribe to our newsletter for weekly spiritual insights, festival changes, and sacred stories delivered to your inbox.
                             </p>
