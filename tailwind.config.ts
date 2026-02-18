@@ -22,6 +22,8 @@ export default {
       fontFamily: {
         heading: ["Cormorant Garamond", "serif"],
         body: ["Inter", "sans-serif"],
+        teluguHeading: ["var(--font-telugu-heading)", "serif"],
+        teluguBody: ["var(--font-telugu-body)", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

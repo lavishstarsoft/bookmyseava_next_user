@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Ponnala&family=Ramabhadra&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -74,6 +74,8 @@
     /* Typography */
     --font-heading: "Cormorant Garamond", serif;
     --font-body: "Inter", sans-serif;
+    --font-telugu-heading: "Ponnala", serif;
+    --font-telugu-body: "Ramabhadra", sans-serif;
 
     --sidebar-background: 43 99% 85%;
     --sidebar-foreground: 0 96% 28%;
