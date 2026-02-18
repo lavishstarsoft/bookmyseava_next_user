@@ -171,9 +171,12 @@ const FestivalBookingModal = ({ isOpen, onClose, festivalData }: FestivalBooking
                                                         <SelectValue placeholder={`Select ${field.label}`} />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {field.options?.split(',').map((opt: string) => (
-                                                            <SelectItem key={opt.trim()} value={opt.trim()}>{opt.trim()}</SelectItem>
-                                                        ))}
+                                                        {field.options?.split(',')
+                                                            .map((opt: string) => opt.trim())
+                                                            .filter((opt: string) => opt !== "")
+                                                            .map((opt: string) => (
+                                                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                                            ))}
                                                     </SelectContent>
                                                 </Select>
                                             ) : field.type === 'radio' ? (
@@ -181,12 +184,15 @@ const FestivalBookingModal = ({ isOpen, onClose, festivalData }: FestivalBooking
                                                     onValueChange={(val) => setDynamicValues(prev => ({ ...prev, [field.id]: val }))}
                                                     className="flex flex-row flex-wrap gap-3 pt-1"
                                                 >
-                                                    {field.options?.split(',').map((opt: string) => (
-                                                        <div key={opt.trim()} className="flex items-center space-x-2 bg-white px-3 py-2 rounded-md border border-[#8D0303]/20 hover:border-[#8D0303]/40 transition-colors cursor-pointer shadow-sm">
-                                                            <RadioGroupItem value={opt.trim()} id={`${field.id}-${opt.trim()}`} className="text-[#8D0303] border-[#8D0303]" />
-                                                            <Label htmlFor={`${field.id}-${opt.trim()}`} className="cursor-pointer font-normal text-sm">{opt.trim()}</Label>
-                                                        </div>
-                                                    ))}
+                                                    {field.options?.split(',')
+                                                        .map((opt: string) => opt.trim())
+                                                        .filter((opt: string) => opt !== "")
+                                                        .map((opt: string) => (
+                                                            <div key={opt} className="flex items-center space-x-2 bg-white px-3 py-2 rounded-md border border-[#8D0303]/20 hover:border-[#8D0303]/40 transition-colors cursor-pointer shadow-sm">
+                                                                <RadioGroupItem value={opt} id={`${field.id}-${opt}`} className="text-[#8D0303] border-[#8D0303]" />
+                                                                <Label htmlFor={`${field.id}-${opt}`} className="cursor-pointer font-normal text-sm">{opt}</Label>
+                                                            </div>
+                                                        ))}
                                                 </RadioGroup>
                                             ) : field.type === 'checkbox' ? (
                                                 <div className="flex items-center space-x-3 bg-white p-3 rounded-md border border-[#8D0303]/20 hover:border-[#8D0303]/40 transition-colors shadow-sm">
