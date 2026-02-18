@@ -238,7 +238,7 @@ const BlogPost = () => {
     }
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-[#efefef] text-black">
             <Helmet>
                 <title>{post.title} | Book My Seva</title>
                 <meta name="description" content={post.excerpt || `Read about ${post.title} on Book My Seva`} />
@@ -269,7 +269,7 @@ const BlogPost = () => {
                         {/* Header Content */}
                         <div className="mb-8 animate-fade-in-up">
 
-                            <h1 className="font-teluguHeading text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-6 leading-tight">
+                            <h1 className="font-teluguHeading text-3xl md:text-4xl lg:text-5xl font-bold text-black mb-6 leading-tight">
                                 {post.title}
                             </h1>
 
@@ -412,7 +412,7 @@ const BlogPost = () => {
 
 
                         {/* Render Content */}
-                        <div className="blog-content mb-12 font-teluguBody">
+                        <div className="blog-content mb-12 font-teluguBody text-black">
                             {post.content ? (
                                 <ReadOnlyEditor content={post.content} />
                             ) : (
