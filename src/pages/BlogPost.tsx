@@ -412,7 +412,7 @@ const BlogPost = () => {
 
 
                         {/* Render Content */}
-                        <div className="blog-content mb-12 font-teluguBody text-lg leading-relaxed">
+                        <div className="blog-content mb-12 font-teluguBody">
                             {post.content ? (
                                 <ReadOnlyEditor content={post.content} />
                             ) : (

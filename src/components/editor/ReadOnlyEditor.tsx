@@ -20,8 +20,8 @@ const ReadOnlyEditor = ({ content }: { content: any }) => {
 
     return (
         <div
-            className="prose prose-neutral dark:prose-invert max-w-none 
-            prose-headings:font-heading prose-headings:font-bold prose-headings:text-maroon dark:prose-headings:text-marigold
+            className="prose prose-neutral dark:prose-invert max-w-none font-teluguBody
+            prose-headings:font-teluguHeading prose-headings:font-bold prose-headings:text-maroon dark:prose-headings:text-marigold
             prose-p:text-foreground/90 prose-p:leading-relaxed
             prose-a:text-marigold prose-a:no-underline hover:prose-a:underline
             prose-img:rounded-xl prose-img:shadow-lg

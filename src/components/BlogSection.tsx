@@ -90,7 +90,7 @@ const BlogSection = () => {
                 </span>
                 <div className="h-px w-8 bg-gradient-to-l from-transparent to-spiritual-green"></div>
               </div>
-              <h2 className="font-heading text-2xl md:text-5xl font-bold text-maroon-dark md:mt-2">
+              <h2 className="font-teluguHeading text-2xl md:text-5xl font-bold text-maroon-dark md:mt-2">
                 From Our Blog
               </h2>
             </div>
@@ -127,11 +127,11 @@ const BlogSection = () => {
                     ⭐ {featuredPost.category || 'General'}
                   </span>
 
-                  <h3 className="font-heading text-2xl md:text-3xl lg:text-4xl font-bold mb-3 leading-tight">
+                  <h3 className="font-teluguHeading text-2xl md:text-3xl lg:text-4xl font-bold mb-3 leading-tight">
                     {featuredPost.title}
                   </h3>
 
-                  <p className="text-white/90 text-sm md:text-base mb-4 line-clamp-2 max-w-2xl">
+                  <p className="font-teluguBody text-white/90 text-lg md:text-xl mb-4 line-clamp-2 max-w-2xl leading-relaxed">
                     {featuredPost.excerpt}
                   </p>
 
@@ -182,11 +182,11 @@ const BlogSection = () => {
 
               {/* Content */}
               <div className="p-5">
-                <h3 className="font-heading text-xl font-bold mb-2 line-clamp-2 group-hover:text-marigold transition-colors leading-tight">
+                <h3 className="font-teluguHeading text-xl font-bold mb-2 line-clamp-2 group-hover:text-marigold transition-colors leading-tight">
                   {post.title}
                 </h3>
 
-                <p className="text-muted-foreground text-sm line-clamp-2 mb-4 leading-relaxed">
+                <p className="font-teluguBody text-muted-foreground text-base md:text-lg line-clamp-2 mb-4 leading-relaxed">
                   {post.excerpt}
                 </p>
 
