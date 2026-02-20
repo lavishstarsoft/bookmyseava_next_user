@@ -15,6 +15,8 @@ import Profile from "./pages/Profile";
 import About from "./pages/About";
 import Layout from "./components/Layout";
 import BookPooja from "./pages/BookPooja";
+import PoojaDetail from "./pages/PoojaDetail";
+import PoojaCheckout from "./pages/PoojaCheckout";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient({
@@ -47,6 +49,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/book-pooja" element={<BookPooja />} />
+            <Route path="/pooja/:slug" element={<PoojaDetail />} />
+            <Route path="/checkout/:slug" element={<PoojaCheckout />} />
             <Route path="/live-darshan" element={<LiveDarshan />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:id" element={<BlogPost />} />

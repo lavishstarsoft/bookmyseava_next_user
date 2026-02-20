@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Search, Sparkles, ArrowRight, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 const poojaList = [
     {
         id: 1,
+        slug: "BMS-ABH-7X3Q",
         title: "Abhishekam",
         description: "A sacred ritual of bathing the deity with holy substances like milk, yogurt, honey, and water.",
         image: "/images/poojas/abhishekam.png",
@@ -14,6 +16,7 @@ const poojaList = [
     },
     {
         id: 2,
+        slug: "BMS-ARC-4K9P",
         title: "Archana",
         description: "Chanting of the deity's holy names with offering of flowers, invoking divine blessings.",
         image: "/images/poojas/archana.png",
@@ -22,6 +25,7 @@ const poojaList = [
     },
     {
         id: 3,
+        slug: "BMS-CHH-2M5R",
         title: "Chandi Homam",
         description: "A supreme fire ritual dedicated to Goddess Chandi for eliminating negativity and attaining victory.",
         image: "/images/poojas/chandi_homam.png",
@@ -30,6 +34,7 @@ const poojaList = [
     },
     {
         id: 4,
+        slug: "BMS-DPA-8N1W",
         title: "Deeparadhana",
         description: "Lighting of lamps to dispel darkness and ignorance, inviting knowledge and divine presence.",
         image: "/images/poojas/deeparadhana.png",
@@ -38,6 +43,7 @@ const poojaList = [
     },
     {
         id: 5,
+        slug: "BMS-GNH-6T4V",
         title: "Ganapathi Homam",
         description: "A powerful fire ritual dedicated to Lord Ganesha to remove obstacles and ensure success.",
         image: "/images/poojas/ganapathi_homam.png",
@@ -46,6 +52,7 @@ const poojaList = [
     },
     {
         id: 6,
+        slug: "BMS-KMA-3J8L",
         title: "Kumkum Archana",
         description: "Worship of the Divine Mother with vermilion (kumkum), bestowing long life and well-being.",
         image: "/images/poojas/kumkum_archana.png",
@@ -54,6 +61,7 @@ const poojaList = [
     },
     {
         id: 7,
+        slug: "BMS-NVG-9F2D",
         title: "Navagraha Shanti",
         description: "Ritual to appease the nine planetary deities and reduce the negative effects of planetary positions.",
         image: "/images/poojas/navagraha_shanti.png",
@@ -62,6 +70,7 @@ const poojaList = [
     },
     {
         id: 8,
+        slug: "BMS-RAB-5H7Y",
         title: "Rudra Abhishekam",
         description: "Powerful abhishek to Lord Shiva with Rudram chanting for health and removal of bad karma.",
         image: "/images/poojas/rudra_abhishekam.png",
@@ -70,6 +79,7 @@ const poojaList = [
     },
     {
         id: 9,
+        slug: "BMS-SNV-1C6B",
         title: "Satyanarayana Swamy Vratam",
         description: "A traditional ritual performed to express gratitude to Lord Vishnu, bringing abundance.",
         image: "/images/poojas/satyanarayana_vratam.png",
@@ -78,6 +88,7 @@ const poojaList = [
     },
     {
         id: 10,
+        slug: "BMS-VHP-4G9Z",
         title: "Vahan Pooja",
         description: "Blessing ceremony for new vehicles to ensure safety and protection from accidents.",
         image: "/images/poojas/vahan_pooja.png",
@@ -242,10 +253,12 @@ const BookPooja = () => {
                                     </p>
 
                                     {/* Action Button - Updated to match Home Page 'spiritual-green' style */}
-                                    <Button className="w-full bg-spiritual-green hover:bg-spiritual-green/90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 h-10 text-xs tracking-wide uppercase group/btn">
-                                        <span className="mr-2">Book Now</span>
-                                        <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
-                                    </Button>
+                                    <Link to={`/pooja/${pooja.slug}`} className="mt-auto block">
+                                        <Button className="w-full bg-spiritual-green hover:bg-spiritual-green/90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 h-10 text-xs tracking-wide uppercase group/btn">
+                                            <span className="mr-2">Book Now</span>
+                                            <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+                                        </Button>
+                                    </Link>
                                 </div>
                             </div>
                         ))}
