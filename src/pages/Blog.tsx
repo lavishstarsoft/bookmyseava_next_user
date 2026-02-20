@@ -153,7 +153,7 @@ const Blog = () => {
                                 {currentPosts.map((post, index) => (
                                     <article
                                         key={post._id}
-                                        onClick={() => navigate(`/blog/${post.slug || post._id}`)}
+                                        onClick={() => window.open(`/blog/${post.slug || post._id}`, '_blank')}
                                         className="group bg-card rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-border h-full flex flex-col hover:-translate-y-1 cursor-pointer"
                                         style={{ animationDelay: `${index * 100}ms` }}
                                     >

@@ -110,7 +110,7 @@ const BlogSection = () => {
           {featuredPost && (
             <article
               className="group relative md:col-span-2 lg:col-span-2 rounded-xl overflow-hidden cursor-pointer shadow-lg hover:shadow-xl transition-shadow h-full"
-              onClick={() => navigate(`/blog/${featuredPost.slug || featuredPost._id}`)}
+              onClick={() => window.open(`/blog/${featuredPost.slug || featuredPost._id}`, '_blank')}
             >
               {/* Large Image with Overlay */}
               <div className="relative h-full min-h-[20rem] md:min-h-[24rem] overflow-hidden">
@@ -127,7 +127,7 @@ const BlogSection = () => {
                     ⭐ {featuredPost.category || 'General'}
                   </span>
 
-                  <h3 className="font-teluguHeading text-2xl md:text-3xl lg:text-4xl font-bold mb-3 leading-tight">
+                  <h3 className="font-teluguHeading text-2xl md:text-3xl lg:text-4xl font-bold mb-3 leading-[1.6] line-clamp-2 pt-2 h-[calc(2*1.6em+0.5rem)] overflow-hidden">
                     {featuredPost.title}
                   </h3>
 
@@ -163,7 +163,7 @@ const BlogSection = () => {
             <article
               key={post._id}
               className="group bg-card rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-border hover:border-marigold/50"
-              onClick={() => navigate(`/blog/${post.slug || post._id}`)}
+              onClick={() => window.open(`/blog/${post.slug || post._id}`, '_blank')}
             >
               {/* Image */}
               <div className="relative h-48 overflow-hidden">
@@ -182,7 +182,7 @@ const BlogSection = () => {
 
               {/* Content */}
               <div className="p-5">
-                <h3 className="font-teluguHeading text-xl font-bold mb-2 line-clamp-2 group-hover:text-marigold transition-colors leading-tight">
+                <h3 className="font-teluguHeading text-xl font-bold mb-2 line-clamp-2 group-hover:text-marigold transition-colors leading-[1.6] pt-2 h-[calc(2*1.6em+0.5rem)] overflow-hidden">
                   {post.title}
                 </h3>
 

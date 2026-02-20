@@ -28,9 +28,9 @@ interface PanchangamData {
     formFields?: any[];
 }
 
+import { useQuery } from "@tanstack/react-query";
+
 const PanchangamSection = () => {
-    const [data, setData] = useState<PanchangamData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const today = new Date();
@@ -52,24 +52,18 @@ const PanchangamSection = () => {
 
     const defaultRec = dayRecommendations[dayName];
 
-    useEffect(() => {
-        const fetchPanchangam = async () => {
-            try {
-                const dateStr = format(new Date(), "yyyy-MM-dd");
-                const response = await axios.get(`${API_URL.replace('/api', '/api/v1')}/content/panchangam?date=${dateStr}`);
-                // Only set data if it has actual panchangam fields (not just message)
-                if (response.data && response.data.tithi) {
-                    setData(response.data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch panchangam:", error);
-            } finally {
-                setIsLoading(false);
+    const { data, isLoading } = useQuery<PanchangamData>({
+        queryKey: ["panchangam", format(new Date(), "yyyy-MM-dd")],
+        queryFn: async () => {
+            const dateStr = format(new Date(), "yyyy-MM-dd");
+            const response = await axios.get(`${API_URL.replace('/api', '/api/v1')}/content/panchangam?date=${dateStr}`);
+            if (response.data && response.data.tithi) {
+                return response.data;
             }
-        };
-
-        fetchPanchangam();
-    }, []);
+            throw new Error("Invalid panchangam data");
+        },
+        retry: 1,
+    });
 
     const handleBookNow = () => {
         if (data?.specialEventBookingLink) {
