@@ -195,7 +195,7 @@ const Blog = () => {
                                                 </span>
                                             </div>
 
-                                            <h3 className="font-teluguHeading text-xl font-bold text-foreground mb-3 leading-tight group-hover:text-maroon transition-colors line-clamp-2">
+                                            <h3 className="font-teluguHeading text-xl font-bold text-foreground mb-3 leading-[1.6] group-hover:text-maroon transition-colors line-clamp-2 pt-2 h-[calc(2*1.6em+0.5rem)] overflow-hidden">
                                                 {post.title}
                                             </h3>
 
