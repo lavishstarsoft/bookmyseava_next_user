@@ -269,7 +269,7 @@ const BlogPost = () => {
                         {/* Header Content */}
                         <div className="mb-8 animate-fade-in-up">
 
-                            <h1 className="font-teluguHeading text-3xl md:text-4xl lg:text-5xl font-bold text-black mb-6 leading-tight">
+                            <h1 className="font-teluguHeading text-3xl md:text-4xl lg:text-5xl font-bold text-black mb-6 leading-[1.4] pt-2">
                                 {post.title}
                             </h1>
 
@@ -456,7 +456,7 @@ const BlogPost = () => {
                                                         {relatedPost.publishedAt ? format(new Date(relatedPost.publishedAt), 'MMM d') : '-'}
                                                     </span>
                                                 </div>
-                                                <h4 className="font-teluguHeading font-bold text-lg text-foreground leading-tight mb-2 group-hover:text-maroon transition-colors line-clamp-2 md:min-h-[3.5rem]">
+                                                <h4 className="font-teluguHeading font-bold text-lg text-foreground leading-[1.6] mb-2 group-hover:text-maroon transition-colors line-clamp-2 pt-2 h-[calc(2*1.6em+0.2rem)] overflow-hidden">
                                                     {relatedPost.title}
                                                 </h4>
                                                 <div className="flex items-center gap-1 text-sm font-medium text-marigold">
