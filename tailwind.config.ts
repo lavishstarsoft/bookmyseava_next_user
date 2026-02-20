@@ -20,8 +20,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        heading: ["Cormorant Garamond", "serif"],
-        body: ["Inter", "sans-serif"],
+        heading: ["var(--font-heading)", "serif"],
+        body: ["var(--font-body)", "sans-serif"],
         teluguHeading: ["var(--font-telugu-heading)", "serif"],
         teluguBody: ["var(--font-telugu-body)", "sans-serif"],
       },

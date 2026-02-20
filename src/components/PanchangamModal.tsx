@@ -55,8 +55,8 @@ const PanchangamModal = ({ open, onOpenChange }: PanchangamModalProps) => {
 
   // Fallback data when API returns nothing
   const displayData = data || {
-    samvatsaram: "Shri Vishvavasu",
-    maasam: "Magha Maasam",
+    samvatsaram: "శ్రీ విశ్వావసు నామ సంవత్సరం",
+    maasam: "మాఘ మాసం",
     tithi: "Data not available",
     nakshatra: "Data not available",
     yoga: "—",
@@ -91,9 +91,7 @@ const PanchangamModal = ({ open, onOpenChange }: PanchangamModalProps) => {
             <div className="bg-white rounded-2xl p-5 shadow-xl border-2 border-[#8D0303]/20 relative overflow-hidden">
               <div className="relative z-10 text-center">
                 <p className="text-[#8D0303] font-bold text-lg md:text-xl mb-0.5 tracking-tight">
-                  {displayData.samvatsaram.toLowerCase().includes("nama samvatsaram")
-                    ? displayData.samvatsaram
-                    : `${displayData.samvatsaram} Nama Samvatsaram`}
+                  {displayData.samvatsaram}
                 </p>
                 <p className="text-[#8D0303]/80 font-semibold text-base mb-3">
                   {displayData.maasam}
@@ -151,7 +149,7 @@ const PanchangamItem = ({ icon, label, value }: { icon: React.ReactNode; label: 
       {icon}
       <span>{label}</span>
     </div>
-    <p className="text-sm font-semibold text-[#8D0303]">{value}</p>
+    <p className="text-sm font-normal text-[#8D0303]">{value}</p>
   </div>
 );
 

@@ -102,8 +102,8 @@ const PanchangamSection = () => {
 
     // Use fetched data or fallbacks when no data from backend
     const displayData = data || {
-        samvatsaram: "Shri Vishvavasu",
-        maasam: "Magha Maasam",
+        samvatsaram: "శ్రీ విశ్వావసు నామ సంవత్సరం",
+        maasam: "మాఘ మాసం",
         tithi: "Data not available",
         nakshatra: "Data not available",
         yoga: "—",
@@ -149,9 +149,7 @@ const PanchangamSection = () => {
 
                             <div className="relative z-10 text-center">
                                 <p className="text-[#8D0303] font-bold text-xl md:text-2xl mb-1 tracking-wide">
-                                    {displayData.samvatsaram.toLowerCase().includes("nama samvatsaram")
-                                        ? displayData.samvatsaram
-                                        : `${displayData.samvatsaram} Nama Samvatsaram`}
+                                    {displayData.samvatsaram}
                                 </p>
                                 <p className="text-[#8D0303]/80 font-semibold text-lg mb-4">
                                     {displayData.maasam}
@@ -272,7 +270,7 @@ const PanchangamItem = ({ icon, label, value }: { icon: React.ReactNode; label: 
             {icon}
             <span>{label}</span>
         </div>
-        <p className="text-sm font-semibold text-[#8D0303]">{value}</p>
+        <p className="text-sm font-normal text-[#8D0303]">{value}</p>
     </div>
 );
 

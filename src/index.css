@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Ponnala';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/ponnala/v3/w8gaH2QxQOU08bbbrQs.ttf) format('truetype');
+  size-adjust: 125%;
+  /* Scale only Telugu text */
+}
+
+@font-face {
+  font-family: 'Ramabhadra';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/ramabhadra/v17/EYq2maBOwqRW9P1SQ83LehM.ttf) format('truetype');
+  size-adjust: 130%;
+  /* Scale only Telugu text */
+}
+
 @layer base {
   :root {
     /* Sacred Color Palette - Updated to Client Reference */
@@ -21,6 +41,7 @@
     /* #00BD40 - Bright Green */
     --spiritual-green-light: 140 80% 50%;
     /* Lighter Bright Green */
+    --telugu-scaling: 1.25;
 
     /* Core Theme */
     --background: 43 99% 85%;
@@ -85,9 +106,9 @@
     --shadow-elevated: 0 8px 30px -8px hsl(var(--maroon) / 0.15);
     --shadow-glow: 0 0 40px hsl(var(--marigold) / 0.3);
 
-    /* Typography */
-    --font-heading: "Cormorant Garamond", serif;
-    --font-body: "Inter", sans-serif;
+    /* Typography - English: Inter, Telugu: Ramabhadra */
+    --font-heading: "Inter", "Ramabhadra", sans-serif;
+    --font-body: "Inter", "Ramabhadra", sans-serif;
     --font-telugu-heading: "Ponnala", serif;
     --font-telugu-body: "Ramabhadra", sans-serif;
 
@@ -149,8 +170,16 @@
     @apply border-border;
   }
 
+  html {
+    font-size: 16px;
+    /* Back to original base size */
+  }
+
   body {
     @apply bg-background text-foreground font-body antialiased;
+    font-size: 1rem;
+    /* Back to original */
+    line-height: 1.6;
   }
 
   h1,
@@ -160,6 +189,10 @@
   h5,
   h6 {
     @apply font-heading;
+    font-weight: 500;
+    /* Keep refined weight for clarity */
+    line-height: 1.3;
+    letter-spacing: 0.01em;
   }
 }
 

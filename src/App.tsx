@@ -12,6 +12,8 @@ import FloatingAudioPlayer from "./components/FloatingAudioPlayer";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
 import Layout from "./components/Layout";
+import BookPooja from "./pages/BookPooja";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -21,10 +23,12 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter basename="/">
+        <ScrollToTop />
         <FloatingAudioPlayer />
         <Layout>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/book-pooja" element={<BookPooja />} />
             <Route path="/live-darshan" element={<LiveDarshan />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:id" element={<BlogPost />} />
