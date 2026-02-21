@@ -82,7 +82,7 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
     { name: t('nav.home'), href: "/", icon: Home, isImage: true, imageSrc: templeIcon },
     { name: t('nav.about'), href: "/about", icon: Info },
     { name: t('nav.bookPooja'), href: "/book-pooja", icon: CalendarCheck },
-    { name: t('nav.kits'), href: "/kits", icon: Package },
+    { name: t('nav.kits'), href: "/pooja-kits", icon: Package },
     { name: t('nav.prasadam'), href: "/prasadam", icon: Gift },
     { name: t('nav.onlinePooja'), href: "/online-pooja", icon: Video },
     { name: t('nav.homeService'), href: "/home-service", icon: Truck },
