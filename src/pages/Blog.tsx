@@ -5,6 +5,7 @@ import { BookOpen, Calendar, Clock, ArrowRight, Search, Sparkles, ChevronLeft, C
 import axios from "axios";
 import { format } from "date-fns";
 import { API_URL } from "@/config";
+import { isTeluguText } from "@/utils/languageUtils";
 
 const Blog = () => {
     const navigate = useNavigate();
@@ -195,11 +196,13 @@ const Blog = () => {
                                                 </span>
                                             </div>
 
-                                            <h3 className="font-teluguHeading text-xl font-bold text-foreground mb-3 leading-[1.6] group-hover:text-maroon transition-colors line-clamp-2 pt-2 h-[calc(2*1.6em+0.5rem)] overflow-hidden">
+                                            <h3 className={`font-teluguHeading font-bold text-foreground mb-3 group-hover:text-maroon transition-colors line-clamp-2 overflow-hidden ${isTeluguText(post.title) ? 'text-[20px] leading-[1.6] h-[calc(2*1.6em)]' : 'text-[18px] leading-[1.5] h-[calc(2*1.5em)]'}`}>
                                                 {post.title}
                                             </h3>
 
-                                            <p className="font-teluguBody text-muted-foreground text-sm line-clamp-3 mb-6 leading-relaxed flex-1">
+                                            <p
+                                                className={`font-teluguBody text-muted-foreground line-clamp-3 mb-6 flex-1 overflow-hidden ${isTeluguText(post.excerpt) ? 'text-[14px] leading-[1.8] h-[calc(3*1.8em)]' : 'text-[12px] leading-[1.7] h-[calc(3*1.7em)]'}`}
+                                            >
                                                 {post.excerpt || "No summary available."}
                                             </p>
 
