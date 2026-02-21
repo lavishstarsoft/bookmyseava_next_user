@@ -4,6 +4,7 @@ import axios from "axios";
 import { format } from "date-fns";
 import { useNavigate, Link } from "react-router-dom";
 import { API_URL } from "@/config";
+import { isTeluguText } from "@/utils/languageUtils";
 
 interface BlogPost {
   _id: string;
@@ -127,11 +128,11 @@ const BlogSection = () => {
                     ⭐ {featuredPost.category || 'General'}
                   </span>
 
-                  <h3 className="font-teluguHeading text-2xl md:text-3xl lg:text-4xl font-bold mb-3 leading-[1.6] line-clamp-2 pt-2 h-[calc(2*1.6em+0.5rem)] overflow-hidden">
+                  <h3 className={`font-teluguHeading font-bold mb-3 line-clamp-2 overflow-hidden shrink-0 ${isTeluguText(featuredPost.title) ? 'text-[28px] md:text-[36px] leading-[1.6] min-h-[calc(2*1.6em)] max-h-[calc(2*1.6em)]' : 'text-2xl md:text-3xl lg:text-4xl leading-[1.4] min-h-[calc(2*1.4em)] max-h-[calc(2*1.4em)]'}`}>
                     {featuredPost.title}
                   </h3>
 
-                  <p className="font-teluguBody text-white/90 text-lg md:text-xl mb-4 line-clamp-2 max-w-2xl leading-relaxed">
+                  <p className={`font-teluguBody text-white/90 mb-4 line-clamp-3 max-w-2xl overflow-hidden shrink-0 ${isTeluguText(featuredPost.excerpt) ? 'text-[14px] leading-[1.8] min-h-[calc(3*1.8em)] max-h-[calc(3*1.8em)]' : 'text-[12px] leading-[1.7] min-h-[calc(3*1.7em)] max-h-[calc(3*1.7em)]'}`}>
                     {featuredPost.excerpt}
                   </p>
 
@@ -181,12 +182,12 @@ const BlogSection = () => {
               </div>
 
               {/* Content */}
-              <div className="p-5">
-                <h3 className="font-teluguHeading text-xl font-bold mb-2 line-clamp-2 group-hover:text-marigold transition-colors leading-[1.6] pt-2 h-[calc(2*1.6em+0.5rem)] overflow-hidden">
+              <div className="p-5 flex flex-col h-full">
+                <h3 className={`font-teluguHeading font-bold mb-2 line-clamp-2 group-hover:text-marigold transition-colors overflow-hidden shrink-0 ${isTeluguText(post.title) ? 'text-[18px] leading-[1.6] min-h-[calc(2*1.6em)] max-h-[calc(2*1.6em)]' : 'text-xl leading-[1.5] min-h-[calc(2*1.5em)] max-h-[calc(2*1.5em)]'}`}>
                   {post.title}
                 </h3>
 
-                <p className="font-teluguBody text-muted-foreground text-base md:text-lg line-clamp-2 mb-4 leading-relaxed">
+                <p className={`font-teluguBody text-muted-foreground line-clamp-3 mb-4 overflow-hidden shrink-0 ${isTeluguText(post.excerpt) ? 'text-[14px] leading-[1.8] min-h-[calc(3*1.8em)] max-h-[calc(3*1.8em)]' : 'text-[12px] leading-[1.7] min-h-[calc(3*1.7em)] max-h-[calc(3*1.7em)]'}`}>
                   {post.excerpt}
                 </p>
 
@@ -205,14 +206,6 @@ const BlogSection = () => {
                       {post.publishedAt ? format(new Date(post.publishedAt), 'MMM d, yyyy') : (post.createdAt ? format(new Date(post.createdAt), 'MMM d, yyyy') : '-')}
                     </span>
                   </div>
-                </div>
-
-                {/* Read More Link */}
-                <div className="mt-4">
-                  <span className="inline-flex items-center text-marigold font-medium text-sm group-hover:gap-2 transition-all">
-                    Read More
-                    <ArrowRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
-                  </span>
                 </div>
               </div>
             </article>

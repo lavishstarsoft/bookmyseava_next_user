@@ -196,12 +196,12 @@ const Blog = () => {
                                                 </span>
                                             </div>
 
-                                            <h3 className={`font-teluguHeading font-bold text-foreground mb-3 group-hover:text-maroon transition-colors line-clamp-2 overflow-hidden ${isTeluguText(post.title) ? 'text-[20px] leading-[1.6] h-[calc(2*1.6em)]' : 'text-[18px] leading-[1.5] h-[calc(2*1.5em)]'}`}>
+                                            <h3 className={`font-teluguHeading font-bold text-foreground mb-3 group-hover:text-maroon transition-colors line-clamp-2 overflow-hidden shrink-0 ${isTeluguText(post.title) ? 'text-[20px] leading-[1.6] min-h-[calc(2*1.6em)] max-h-[calc(2*1.6em)]' : 'text-[18px] leading-[1.5] min-h-[calc(2*1.5em)] max-h-[calc(2*1.5em)]'}`}>
                                                 {post.title}
                                             </h3>
 
                                             <p
-                                                className={`font-teluguBody text-muted-foreground line-clamp-3 mb-6 flex-1 overflow-hidden ${isTeluguText(post.excerpt) ? 'text-[14px] leading-[1.8] h-[calc(3*1.8em)]' : 'text-[12px] leading-[1.7] h-[calc(3*1.7em)]'}`}
+                                                className={`font-teluguBody text-muted-foreground line-clamp-3 mb-6 flex-1 overflow-hidden shrink-0 ${isTeluguText(post.excerpt) ? 'text-[14px] leading-[1.8] min-h-[calc(3*1.8em)] max-h-[calc(3*1.8em)]' : 'text-[12px] leading-[1.7] min-h-[calc(3*1.7em)] max-h-[calc(3*1.7em)]'}`}
                                             >
                                                 {post.excerpt || "No summary available."}
                                             </p>
@@ -209,9 +209,6 @@ const Blog = () => {
                                             <div className="flex items-center justify-between pt-4 border-t border-border/50 mt-auto">
                                                 <span className="text-xs font-medium text-foreground/80">
                                                     By {post.author || "Admin"}
-                                                </span>
-                                                <span className="text-sm font-bold text-marigold flex items-center group-hover:underline">
-                                                    Read More <ArrowRight className="h-3 w-3 ml-1" />
                                                 </span>
                                             </div>
                                         </div>

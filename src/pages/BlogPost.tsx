@@ -457,12 +457,9 @@ const BlogPost = () => {
                                                         {relatedPost.publishedAt ? format(new Date(relatedPost.publishedAt), 'MMM d') : '-'}
                                                     </span>
                                                 </div>
-                                                <h4 className={`font-teluguHeading font-bold text-foreground mb-2 group-hover:text-maroon transition-colors line-clamp-2 overflow-hidden ${isTeluguText(relatedPost.title) ? 'text-[18px] leading-[1.6] h-[calc(2*1.6em)]' : 'text-[16px] leading-[1.5] h-[calc(2*1.5em)]'}`}>
+                                                <h4 className={`font-teluguHeading font-bold text-foreground mb-2 group-hover:text-maroon transition-colors line-clamp-2 overflow-hidden shrink-0 ${isTeluguText(relatedPost.title) ? 'text-[18px] leading-[1.6] min-h-[calc(2*1.6em)] max-h-[calc(2*1.6em)]' : 'text-[16px] leading-[1.5] min-h-[calc(2*1.5em)] max-h-[calc(2*1.5em)]'}`}>
                                                     {relatedPost.title}
                                                 </h4>
-                                                <div className="flex items-center gap-1 text-sm font-medium text-marigold">
-                                                    Read Article <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                                </div>
                                             </div>
                                         </div>
                                     ))}
