@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
 import AuthModal from "./AuthModal";
+import { useFavorites } from "@/contexts/FavoritesContext";
 
 const BottomNavigation = () => {
   const { t } = useTranslation();
@@ -10,9 +11,11 @@ const BottomNavigation = () => {
   const location = useLocation();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
+  const { favorites } = useFavorites();
+
   const navItems = [
     { id: "home", icon: Home, label: t('nav.home'), path: "/" },
-    { id: "favorite", icon: Heart, label: t('common.favorite'), path: "/favorites" },
+    { id: "favorite", icon: Heart, label: t('common.favorite'), path: "/favorites", badge: favorites.length > 0 ? favorites.length : undefined },
     { id: "kits", icon: Package, label: t('nav.kits'), path: "/kits", isCenter: true },
     { id: "cart", icon: ShoppingCart, label: t('common.cart'), path: "/cart", badge: 2 },
     { id: "profile", icon: User, label: t('common.profile'), path: "/profile" },

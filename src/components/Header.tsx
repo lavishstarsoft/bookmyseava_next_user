@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { useFavorites } from "@/contexts/FavoritesContext";
 import PanchangamModal from "./PanchangamModal";
 import AuthModal from "./AuthModal";
 import logo from "@/assets/logo.png";
@@ -42,6 +43,7 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const config = useAppConfig();
+  const { favorites } = useFavorites();
 
   // Read user from localStorage
   const [user, setUser] = useState(() => {
@@ -626,9 +628,16 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
             </DropdownMenu>
 
             {/* Favorite */}
-            <Button variant="ghost" size="icon" className="relative hidden md:flex" title="Favourite">
-              <Heart className="h-5 w-5" />
-            </Button>
+            <Link to="/favorites">
+              <Button variant="ghost" size="icon" className="relative hidden md:flex" title="Favourite">
+                <Heart className="h-5 w-5" />
+                {favorites.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-sacred-red text-secondary-foreground text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-300">
+                    {favorites.length > 99 ? '99+' : favorites.length}
+                  </span>
+                )}
+              </Button>
+            </Link>
 
             {/* Cart */}
             <Button variant="ghost" size="icon" className="relative hidden md:flex">

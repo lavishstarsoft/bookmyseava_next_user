@@ -11,18 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 
-// Mock Data for a single Pooja (Ideally fetched by ID)
-const poojaDetails = {
-    id: 1,
-    title: "Abhishekam",
-    description: "A sacred ritual of bathing the deity with holy substances like milk, yogurt, honey, and water to seek divine blessings and purity of mind.",
-    longDescription: "Abhishekam is a revered Hindu ritual where deities are bathed in sacred offerings like milk, ghee, honey, yogurt, and rose water. This act of devotion is believed to cleanse the soul, bring inner peace, and attract positive energies. Performing Abhishekam regularly is highly auspicious and brings health, wealth, and prosperity to the family.",
-    image: "/images/poojas/abhishekam.png",
-    rating: 4.8,
-    reviews: 124,
-    basePrice: 1500,
-    duration: "45 mins"
-};
+// We don't need mock data for pooja details here anymore, we will primarily rely on location.state
+
 
 // Pricing & Add-ons configuration
 const VERSIONS = [
@@ -43,16 +33,25 @@ const TIME_SLOTS = [
     { id: 'evening', label: 'Evening (05:00 PM - 08:30 PM)' }
 ];
 
-const PoojaCheckout = () => {
-    const { slug } = useParams();
+const Checkout = () => {
+    const { type, slug } = useParams<{ type: 'pooja' | 'kit'; slug: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const isKit = type === 'kit';
+    const payload = location.state || {}; // Expecting { title, image, price, planLabel } for kits, OR { title, image, version, addon } for poojas
 
     // Checkout State
-    const location = useLocation();
-    const [currentStep, setCurrentStep] = useState(1);
+    const [currentStep, setCurrentStep] = useState(isKit ? 2 : 1);
 
-    const selectedVersion = location.state?.version || VERSIONS[0];
-    const selectedAddon = location.state?.addon || ADD_ONS[0];
+    // Data from Payload
+    const selectedVersion = payload.version || VERSIONS[0];
+    const selectedAddon = payload.addon || ADD_ONS[0];
+    const itemTitle = payload.title || (isKit ? "Pooja Kit" : "Pooja Booking");
+    const itemImage = payload.image || "";
+    const kitPrice = payload.price || 0;
+    const kitPlan = payload.planLabel || "One-Time";
+
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [timeSlot, setTimeSlot] = useState(TIME_SLOTS[0]);
     const [paymentMode, setPaymentMode] = useState<'advance' | 'full'>('full');
@@ -60,42 +59,54 @@ const PoojaCheckout = () => {
     const [useCoins, setUseCoins] = useState(false);
 
     // Mock User State
-    const [isLoggedIn] = useState(true); // Toggle this for testing login prompt
+    const [isLoggedIn] = useState(true);
     const [selectedAddress, setSelectedAddress] = useState(1);
 
     // Calculations
     const serviceFee = 50;
     const coinsDiscount = useCoins ? 200 : 0;
-    const subTotal = selectedVersion.price + selectedAddon.price;
+    const subTotal = isKit ? kitPrice : (selectedVersion.price + selectedAddon.price);
     const grandTotal = subTotal + serviceFee - coinsDiscount;
     const advanceAmount = Math.ceil(grandTotal * 0.2); // 20% advance
 
     const amountToPay = paymentMode === 'full' ? grandTotal : advanceAmount;
 
-    // Steps Configuration
-    const STEPS = [
+    // Steps Configuration based on type
+    const STEPS = isKit ? [
+        { num: 2, title: 'Address', icon: MapPin },
+        { num: 3, title: 'Payment', icon: CreditCard }
+    ] : [
         { num: 1, title: 'Date & Time', icon: CalendarIcon },
         { num: 2, title: 'Address', icon: MapPin },
         { num: 3, title: 'Payment', icon: CreditCard }
     ];
 
     const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 3));
+    const prevStep = () => {
+        if (isKit && currentStep === 2) {
+            navigate(-1);
+        } else if (!isKit && currentStep === 1) {
+            navigate(-1);
+        } else {
+            setCurrentStep(prev => Math.max(prev - 1, isKit ? 2 : 1));
+        }
+    };
     const handlePayment = () => {
         alert('Proceeding to Razorpay for ₹' + amountToPay);
         // Integrate Razorpay here
     };
 
     return (
-        <div className="min-h-screen bg-muted/30 pb-20 pt-16 md:pt-24">
+        <div className="min-h-screen bg-muted/30 pb-20 pt-6">
             <div className="container px-4 max-w-6xl mx-auto">
 
                 {/* Header Back Button */}
                 <button
-                    onClick={() => navigate('/book-pooja')}
+                    onClick={() => navigate(isKit ? '/pooja-kits' : '/book-pooja')}
                     className="flex items-center text-sm font-medium text-muted-foreground hover:text-maroon-dark mb-6 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4 mr-1" />
-                    Back to All Poojas
+                    Back to {isKit ? 'Kits' : 'Poojas'}
                 </button>
 
                 <div className="flex flex-col lg:flex-row gap-8">
@@ -109,22 +120,24 @@ const PoojaCheckout = () => {
                                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-muted z-0 hidden md:block" />
                                 <div
                                     className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-spiritual-green z-0 hidden md:block transition-all duration-500"
-                                    style={{ width: `${((currentStep - 1) / 2) * 100}%` }}
+                                    style={{ width: isKit ? `${((currentStep - 2)) * 100}%` : `${((currentStep - 1) / 2) * 100}%` }}
                                 />
 
-                                {STEPS.map((step) => {
+                                {STEPS.map((step, index) => {
                                     const Icon = step.icon;
                                     const isActive = currentStep === step.num;
                                     const isCompleted = currentStep > step.num;
+
+                                    // For Kits, we only have 2 steps, so flex justify-between works perfectly
                                     return (
-                                        <div key={step.num} className="relative z-10 flex flex-col items-center gap-2">
+                                        <div key={step.num} className="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
                                             <div className={`
                                                 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors duration-300
                                                 ${isActive ? 'bg-spiritual-green text-white shadow-md ring-4 ring-spiritual-green/20' :
                                                     isCompleted ? 'bg-spiritual-green text-white' :
                                                         'bg-white text-muted-foreground border-2 border-muted'}
                                             `}>
-                                                {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : step.num}
+                                                {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : (isKit ? index + 1 : step.num)}
                                             </div>
                                             <span className={`text-[10px] md:text-xs font-semibold hidden md:block ${isActive || isCompleted ? 'text-maroon-dark' : 'text-muted-foreground'}`}>
                                                 {step.title}
@@ -185,7 +198,7 @@ const PoojaCheckout = () => {
                                 </div>
 
                                 <div className="mt-8 flex justify-between">
-                                    <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>
+                                    <Button variant="outline" onClick={prevStep}>Back</Button>
                                     <Button onClick={nextStep} className="bg-spiritual-green hover:bg-spiritual-green/90 text-white px-8" disabled={!date}>
                                         Proceed <ChevronRight className="w-4 h-4 ml-2" />
                                     </Button>
@@ -235,7 +248,7 @@ const PoojaCheckout = () => {
                                 )}
 
                                 <div className="mt-8 flex justify-between">
-                                    <Button variant="outline" onClick={() => setCurrentStep(1)}>Back</Button>
+                                    <Button variant="outline" onClick={prevStep}>Back</Button>
                                     <Button onClick={nextStep} className="bg-spiritual-green hover:bg-spiritual-green/90 text-white px-8" disabled={!isLoggedIn}>
                                         Continue to Payment <ChevronRight className="w-4 h-4 ml-2" />
                                     </Button>
@@ -286,7 +299,7 @@ const PoojaCheckout = () => {
                                 </div>
 
                                 <div className="mt-8 flex justify-between items-center pt-6 border-t border-border">
-                                    <Button variant="ghost" onClick={() => setCurrentStep(2)}>Back</Button>
+                                    <Button variant="ghost" onClick={prevStep}>Back</Button>
                                     <div className="text-right flex items-center gap-4">
                                         <div className="text-sm">
                                             Amount to pay: <span className="text-xl font-bold">₹{amountToPay}</span>
@@ -318,14 +331,14 @@ const PoojaCheckout = () => {
                                 {/* Base Item */}
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
-                                        <p className="font-bold text-sm text-gray-800 line-clamp-1">{poojaDetails.title}</p>
-                                        <p className="text-xs text-muted-foreground">{selectedVersion.title}</p>
+                                        <p className="font-bold text-sm text-gray-800 line-clamp-1">{itemTitle}</p>
+                                        <p className="text-xs text-muted-foreground">{isKit ? kitPlan : selectedVersion.title}</p>
                                     </div>
-                                    <span className="font-semibold text-sm">₹{selectedVersion.price}</span>
+                                    <span className="font-semibold text-sm">₹{isKit ? kitPrice : selectedVersion.price}</span>
                                 </div>
 
-                                {/* Add On */}
-                                {selectedAddon.price > 0 && (
+                                {/* Add On (Pooja Only) */}
+                                {!isKit && selectedAddon.price > 0 && (
                                     <div className="flex justify-between items-start mb-3 text-sm">
                                         <p className="text-gray-600">{selectedAddon.label}</p>
                                         <span className="font-medium">₹{selectedAddon.price}</span>
@@ -390,8 +403,8 @@ const PoojaCheckout = () => {
                                 </div>
                                 <p className="text-right text-[10px] text-muted-foreground mb-6">Inclusive of all taxes</p>
 
-                                {/* Date/Time preview if selected */}
-                                {date && (
+                                {/* Date/Time preview if selected (Pooja Only) */}
+                                {!isKit && date && (
                                     <div className="bg-spiritual-green/10 text-spiritual-green p-3 rounded-lg text-xs font-medium flex items-center gap-2">
                                         <CalendarIcon className="w-4 h-4" />
                                         {format(date, "PPP")} • {timeSlot.label.split(' ')[0]}
@@ -407,4 +420,4 @@ const PoojaCheckout = () => {
     );
 };
 
-export default PoojaCheckout;
+export default Checkout;

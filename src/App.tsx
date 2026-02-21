@@ -16,8 +16,12 @@ import About from "./pages/About";
 import Layout from "./components/Layout";
 import BookPooja from "./pages/BookPooja";
 import PoojaDetail from "./pages/PoojaDetail";
-import PoojaCheckout from "./pages/PoojaCheckout";
+import Checkout from "./pages/Checkout";
+import PoojaKits from "./pages/PoojaKits";
+import PoojaKitDetail from "./pages/PoojaKitDetail";
 import ScrollToTop from "./components/ScrollToTop";
+import { FavoritesProvider } from "./contexts/FavoritesContext";
+import Favorites from "./pages/Favorites";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,29 +43,34 @@ persistQueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter basename="/">
-        <ScrollToTop />
-        <FloatingAudioPlayer />
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/book-pooja" element={<BookPooja />} />
-            <Route path="/pooja/:slug" element={<PoojaDetail />} />
-            <Route path="/checkout/:slug" element={<PoojaCheckout />} />
-            <Route path="/live-darshan" element={<LiveDarshan />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:id" element={<BlogPost />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/about" element={<About />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
-    </TooltipProvider>
+    <FavoritesProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter basename="/">
+          <ScrollToTop />
+          <FloatingAudioPlayer />
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/book-pooja" element={<BookPooja />} />
+              <Route path="/pooja/:slug" element={<PoojaDetail />} />
+              <Route path="/checkout/:type/:slug" element={<Checkout />} />
+              <Route path="/pooja-kits" element={<PoojaKits />} />
+              <Route path="/pooja-kit/:slug" element={<PoojaKitDetail />} />
+              <Route path="/live-darshan" element={<LiveDarshan />} />
+              <Route path="/favorites" element={<Favorites />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:id" element={<BlogPost />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/about" element={<About />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      </TooltipProvider>
+    </FavoritesProvider>
   </QueryClientProvider>
 );
 

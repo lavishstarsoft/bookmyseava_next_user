@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
     ArrowLeft, Star, Heart, Share2, ShieldCheck,
-    ChevronRight, CheckCircle2, ChevronLeft, SlidersHorizontal, X, Info, Package, Clock, Users
+    ChevronRight, CheckCircle2, ChevronLeft, SlidersHorizontal, X, Info, Package, Clock, Users, ShoppingCart
 } from "lucide-react";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -126,8 +127,14 @@ const PoojaDetail = () => {
     const subTotal = selectedVersion.price + selectedAddon.price;
 
     const handleProceed = () => {
-        navigate(`/checkout/${slug}`, {
-            state: { version: selectedVersion, addon: selectedAddon, total: subTotal }
+        navigate(`/checkout/pooja/${slug}`, {
+            state: {
+                title: poojaDetails.title,
+                image: poojaDetails.images[0],
+                version: selectedVersion,
+                addon: selectedAddon,
+                total: subTotal
+            }
         });
     };
 
@@ -232,9 +239,18 @@ const PoojaDetail = () => {
                                     </div>
                                     {/* Heart + Share */}
                                     <div className="flex-1 flex items-center justify-end gap-4">
-                                        <button className="text-gray-500 hover:text-red-500 transition-colors">
-                                            <Heart className="w-6 h-6" />
-                                        </button>
+                                        <FavoriteButton
+                                            iconSize={24}
+                                            item={{
+                                                id: poojaDetails.id.toString(),
+                                                type: 'pooja',
+                                                title: poojaDetails.title,
+                                                image: poojaDetails.images[0],
+                                                price: poojaDetails.basePrice,
+                                                rating: poojaDetails.rating,
+                                                reviewCount: poojaDetails.reviewsCount
+                                            }}
+                                        />
                                         <button onClick={onShareClick} className="text-gray-500 hover:text-blue-600 transition-colors">
                                             <Share2 className="w-5 h-5" />
                                         </button>
@@ -271,9 +287,21 @@ const PoojaDetail = () => {
                                     <button ref={shareButtonRef} onClick={onShareClick} className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white rounded-full text-muted-foreground hover:text-blue-600 shadow-sm border border-border/40 transition-colors z-10">
                                         <Share2 className="w-4 h-4" />
                                     </button>
-                                    <button className="absolute top-3 right-12 p-2 bg-white/90 hover:bg-white rounded-full text-muted-foreground hover:text-red-500 shadow-sm border border-border/40 transition-colors z-10">
-                                        <Heart className="w-4 h-4" />
-                                    </button>
+                                    <div className="absolute top-3 right-12 z-10">
+                                        <FavoriteButton
+                                            item={{
+                                                id: poojaDetails.id.toString(),
+                                                type: 'pooja',
+                                                title: poojaDetails.title,
+                                                image: poojaDetails.images[0],
+                                                price: poojaDetails.basePrice,
+                                                rating: poojaDetails.rating,
+                                                reviewCount: poojaDetails.reviewsCount
+                                            }}
+                                            className="bg-white/90 hover:bg-white shadow-sm border border-border/40"
+                                            iconSize={16}
+                                        />
+                                    </div>
 
                                     {/* Desktop Share Popup */}
                                     {isShareOpen && (
@@ -370,14 +398,15 @@ const PoojaDetail = () => {
                                                         <button
                                                             type="button"
                                                             onClick={(e) => {
+                                                                e.preventDefault();
                                                                 e.stopPropagation();
                                                                 if (window.innerWidth < 1024) {
                                                                     setInfoSheet({ title: version.title, includes: version.includes });
                                                                 }
                                                             }}
-                                                            className="p-0.5 text-muted-foreground hover:text-maroon transition-colors"
+                                                            className="p-1.5 text-muted-foreground hover:text-maroon active:text-maroon transition-colors touch-manipulation"
                                                         >
-                                                            <Info className="w-4 h-4" />
+                                                            <Info className="w-[18px] h-[18px]" />
                                                         </button>
                                                         {/* Desktop hover tooltip */}
                                                         <div className="hidden lg:block absolute left-full ml-2 top-1/2 -translate-y-1/2 w-72 bg-white border border-border rounded-xl shadow-xl p-4 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none">
@@ -431,14 +460,15 @@ const PoojaDetail = () => {
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
+                                                        e.preventDefault();
                                                         e.stopPropagation();
                                                         if (window.innerWidth < 1024) {
                                                             setInfoSheet({ title: addon.label, includes: addon.includes });
                                                         }
                                                     }}
-                                                    className="p-0.5 text-muted-foreground hover:text-marigold transition-colors"
+                                                    className="p-1.5 text-muted-foreground hover:text-marigold active:text-marigold transition-colors touch-manipulation"
                                                 >
-                                                    <Info className="w-4 h-4" />
+                                                    <Info className="w-[18px] h-[18px]" />
                                                 </button>
                                                 {/* Desktop hover tooltip */}
                                                 <div className="hidden lg:block absolute left-full ml-2 top-1/2 -translate-y-1/2 w-64 bg-white border border-border rounded-xl shadow-xl p-4 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none">
@@ -483,6 +513,17 @@ const PoojaDetail = () => {
                                 <div className="mt-0.5"><CheckCircle2 className="w-4 h-4 text-marigold" /></div>
                                 <span>Free cancellation up to 24 hours before the pooja</span>
                             </div>
+
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    toast({ title: "Added to Cart 🛒", description: `${poojaDetails.title} (${selectedVersion.title}) added to your cart.` });
+                                }}
+                                className="w-full h-12 text-sm border-2 border-maroon text-maroon hover:text-maroon hover:bg-maroon/5 font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-300 mb-3 tracking-wide uppercase"
+                            >
+                                <ShoppingCart className="w-4 h-4 mr-2" />
+                                Add to Cart
+                            </Button>
 
                             <Button
                                 onClick={handleProceed}
