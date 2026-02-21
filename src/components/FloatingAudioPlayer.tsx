@@ -87,8 +87,8 @@ const FloatingAudioPlayer = () => {
     }
   };
 
-  // Hide on Profile and Pooja Detail pages
-  if (location.pathname === '/profile' || location.pathname.startsWith('/pooja/') || location.pathname.startsWith('/pooja-kit')) return null;
+  // Hide on Profile, Pooja Detail, and Book Pooja pages
+  if (location.pathname === '/profile' || location.pathname === '/book-pooja' || location.pathname.startsWith('/pooja/') || location.pathname.startsWith('/pooja-kit')) return null;
 
   if (!showPlayer) return null;
 
