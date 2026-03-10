@@ -1,106 +1,95 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-    ArrowLeft, Star, ShieldCheck, CheckCircle2, Package, ShoppingCart, ChevronRight, MapPin, CreditCard, Check, Sparkles, Heart, Share2
+    ArrowLeft, Star, ShieldCheck, CheckCircle2, Package, ShoppingCart, ChevronRight, MapPin, CreditCard, Check, Sparkles, Heart, Share2, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { useCart } from "@/contexts/CartContext";
+import axios from "axios";
+import { API_URL, getImageUrl } from "@/config";
 
-// Mock Kit Data
-const KITS_DATA: Record<string, {
-    name: string; image: string; images: string[]; description: string; longDescription: string;
-    rating: number; reviewCount: number;
+// Backend Kit types
+interface PricingPlan {
+    id: string;
+    label: string;
+    price: number | string;
+    active: boolean;
+    badge: string;
+}
+
+interface BackendKit {
+    _id: string;
+    title: string;
+    shortDescription: string;
+    category: string;
+    image?: string;
+    defaultRating?: number;
+    reviewCount?: number;
+    itemsIncluded: { id: number; text: string }[];
+    pricingPlans?: PricingPlan[];
+    marketPrice?: number | string;
+    offerPrice?: number | string;
+}
+
+// Normalized kit for UI
+interface KitDisplay {
+    name: string;
+    image: string;
+    images: string[];
+    description: string;
+    longDescription: string;
+    rating: number;
+    reviewCount: number;
     pricing: { weekly: number; monthly: number; quarterly: number; yearly: number };
     items: string[];
-}> = {
-    "ganapati-pooja-kit": {
-        name: "Ganapati Pooja Kit",
-        image: "/images/poojas/ganapathi_homam.png",
-        images: ["/images/poojas/ganapathi_homam.png", "/images/poojas/abhishekam.png", "/images/poojas/deeparadhana.png"],
-        description: "Complete kit with all items for Ganesh worship and homam.",
-        longDescription: "This premium Ganapati Pooja Kit contains everything you need for a complete and authentic Ganesh worship at home. Each item is carefully selected according to Vedic traditions and sourced from trusted suppliers. The kit ensures you have the freshest flowers, purest ingredients, and all necessary accessories for a devotionally satisfying experience.",
-        rating: 4.9, reviewCount: 238,
-        pricing: { weekly: 299, monthly: 899, quarterly: 2399, yearly: 7999 },
-        items: [
-            "Modak mould (reusable)",
-            "Durva grass (fresh bunch)",
-            "Red hibiscus flowers",
-            "Coconut (whole)",
-            "Kumkum & Turmeric (haldi)",
-            "Agarbatti (premium sandalwood)",
-            "Camphor tablets",
-            "Ghee (pure cow, 50ml)",
-            "Cotton wicks (pack of 20)",
-            "Betel leaves & nuts",
-            "Banana (offering)",
-            "Jaggery (gud)",
-            "Sacred thread (moli)",
-            "Decorated pooja thali",
-        ]
-    },
-    "shiva-abhishekam-kit": {
-        name: "Abhishekam Kit",
-        image: "/images/poojas/abhishekam.png",
-        images: ["/images/poojas/abhishekam.png", "/images/poojas/ganapathi_homam.png", "/images/poojas/deeparadhana.png", "/images/poojas/deeparadhana.png"],
-        description: "Complete Abhishekam materials for Lord Shiva worship.",
-        longDescription: "A comprehensive Abhishekam Kit that includes all the sacred offerings for performing Shiva Abhishekam. From Panchamritam ingredients (milk, curd, honey, ghee, sugar) to bilva leaves and vibhuti, this kit has been curated by experienced pandits to ensure an authentic and fulfilling worship experience.",
-        rating: 4.8, reviewCount: 186,
-        pricing: { weekly: 349, monthly: 999, quarterly: 2699, yearly: 8999 },
-        items: [
-            "Fresh milk (500ml)",
-            "Curd (200ml)",
-            "Honey (100ml, pure)",
-            "Ghee (pure cow, 100ml)",
-            "Sugar (200g)",
-            "Bilva leaves (fresh)",
-            "Vibhuti (sacred ash)",
-            "Sandalwood paste",
-            "Rose water (100ml)",
-            "Rudraksha mala",
-            "Agarbatti & camphor",
-            "Cotton wicks",
-            "Sacred thread",
-            "Coconut",
-        ]
-    },
-    "daily-pooja-kit": {
-        name: "Daily Pooja Kit",
-        image: "/images/poojas/deeparadhana.png",
-        images: ["/images/poojas/deeparadhana.png", "/images/poojas/ganapathi_homam.png", "/images/poojas/abhishekam.png"],
-        description: "Essentials for daily home worship and deeparadhana.",
-        longDescription: "The perfect daily worship companion! This kit provides all the essentials you need for your everyday pooja routine. Designed for convenience and authenticity, it includes fresh flowers, premium agarbatti, pure camphor, and all traditional items to make your daily worship complete and spiritually fulfilling.",
-        rating: 4.7, reviewCount: 412,
-        pricing: { weekly: 199, monthly: 599, quarterly: 1599, yearly: 4999 },
-        items: [
-            "Fresh flowers (mixed)",
-            "Agarbatti (premium, 20 sticks)",
-            "Camphor tablets (10 pcs)",
-            "Cotton wicks (pack of 30)",
-            "Kumkum (50g)",
-            "Turmeric powder (50g)",
-            "Sandalwood powder (25g)",
-            "Coconut oil (100ml)",
-            "Ghee (50ml)",
-            "Betel leaves (10 pcs)",
-            "Banana (2 pcs)",
-            "Match box",
-        ]
-    },
-};
+    category: string;
+    pricingPlans?: PricingPlan[];
+    marketPrice?: number;
+    offerPrice?: number;
+}
 
-// Default fallback for kits not in the map
-const DEFAULT_KIT = {
-    name: "Pooja Kit",
-    image: "/images/poojas/deeparadhana.png",
-    images: ["/images/poojas/deeparadhana.png", "/images/poojas/ganapathi_homam.png", "/images/poojas/abhishekam.png"],
-    description: "Complete pooja kit with all essential items.",
-    longDescription: "A comprehensive pooja kit curated with care, containing all the essential items you need for an authentic and devotionally satisfying worship experience at home.",
-    rating: 4.7, reviewCount: 100,
-    pricing: { weekly: 299, monthly: 899, quarterly: 2399, yearly: 7999 },
-    items: ["Agarbatti", "Camphor", "Cotton wicks", "Kumkum", "Turmeric", "Flowers", "Coconut", "Ghee", "Betel leaves"]
+// Convert backend kit to display format
+const toDisplayKit = (kit: BackendKit): KitDisplay => {
+    const imageUrl = getImageUrl(kit.image) || "/images/poojas/deeparadhana.png";
+
+    // Build pricing from pricingPlans or market/offer price
+    let pricing = { weekly: 0, monthly: 0, quarterly: 0, yearly: 0 };
+
+    if (kit.category === 'daily' && kit.pricingPlans?.length) {
+        const planMap: Record<string, number> = {};
+        kit.pricingPlans.forEach(p => {
+            const key = p.id.replace('one-time', 'monthly');
+            planMap[key] = Number(p.price) || 0;
+        });
+        pricing = {
+            weekly: planMap['weekly'] || 0,
+            monthly: planMap['monthly'] || planMap['one-time'] || 0,
+            quarterly: planMap['quarterly'] || 0,
+            yearly: planMap['yearly'] || 0,
+        };
+    } else {
+        const price = Number(kit.offerPrice) || Number(kit.marketPrice) || 0;
+        pricing = { weekly: price, monthly: price, quarterly: price, yearly: price };
+    }
+
+    return {
+        name: kit.title,
+        image: imageUrl,
+        images: [imageUrl],
+        description: kit.shortDescription || "Complete pooja kit with all essential items.",
+        longDescription: kit.shortDescription || "A comprehensive pooja kit curated with care, containing all the essential items you need for an authentic and devotionally satisfying worship experience at home.",
+        rating: kit.defaultRating || 4.7,
+        reviewCount: kit.reviewCount || 0,
+        pricing,
+        items: kit.itemsIncluded.map(item => item.text),
+        category: kit.category,
+        pricingPlans: kit.pricingPlans,
+        marketPrice: Number(kit.marketPrice) || 0,
+        offerPrice: Number(kit.offerPrice) || 0,
+    };
 };
 
 type SubscriptionPlan = 'one_time' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
@@ -113,11 +102,6 @@ const SUBSCRIPTION_OPTIONS: { id: SubscriptionPlan; label: string; desc: string;
     { id: 'yearly', label: 'Annual Subscription', desc: 'Best value — save 25%', badge: 'Best Value' },
 ];
 
-const MOCK_ADDRESSES = [
-    { id: 1, name: "Home", address: "Flat 302, Sri Lakshmi Residency, Kukatpally, Hyderabad - 500072", isDefault: true },
-    { id: 2, name: "Office", address: "Tech Park, Floor 5, HITEC City, Hyderabad - 500081", isDefault: false },
-];
-
 const MOCK_REVIEWS = [
     { id: 1, user: "Srinivas Rao", rating: 5, date: "12 Oct 2023", text: "Very authentic and fresh items. The pandit curated selection perfectly matched our needs. Saved a lot of time searching for individual items in the market." },
     { id: 2, user: "Lakshmi K", rating: 4, date: "28 Sep 2023", text: "Good quality products. The packaging was neat and delivery was on time. The monthly subscription is very helpful." },
@@ -128,19 +112,17 @@ const PoojaKitDetail = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
     const { toast } = useToast();
-
-    const kit = KITS_DATA[slug || ''] || DEFAULT_KIT;
-
     const { addToCart } = useCart();
 
-    const [currentStep, setCurrentStep] = useState(1);
+    const [kit, setKit] = useState<KitDisplay | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('monthly');
-    const [selectedAddress, setSelectedAddress] = useState(1);
     const [activeImage, setActiveImage] = useState(0);
     const [quantity, setQuantity] = useState(1);
 
     // Mobile Accordion State
-    // true = expanded. By default all are closed on mobile (false). We'll handle this in the render logic.
     const [expandedSections, setExpandedSections] = useState({
         about: false,
         items: false,
@@ -152,13 +134,65 @@ const PoojaKitDetail = () => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
+    // Fetch kit from backend
     useEffect(() => {
+        const fetchKit = async () => {
+            if (!slug) return;
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await axios.get(`${API_URL.replace('/api', '/api/v1')}/kits/${slug}`);
+                const backendKit: BackendKit = response.data;
+                setKit(toDisplayKit(backendKit));
+            } catch (err) {
+                console.error("Failed to fetch kit:", err);
+                setError("Failed to load kit details. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchKit();
         window.scrollTo(0, 0);
-        // On mount, if it's a large screen, expand all by default
+
         if (window.innerWidth >= 1024) {
             setExpandedSections({ about: true, items: true, savings: true, reviews: true });
         }
-    }, []);
+    }, [slug]);
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-muted/20 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-10 h-10 text-marigold animate-spin" />
+                    <p className="text-muted-foreground font-medium">Loading kit details...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error || !kit) {
+        return (
+            <div className="min-h-screen bg-muted/20 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4 text-center px-4">
+                    <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center">
+                        <Package className="w-8 h-8 text-red-400" />
+                    </div>
+                    <h2 className="font-heading text-2xl font-bold text-maroon-dark">Kit not found</h2>
+                    <p className="text-muted-foreground max-w-sm">{error || "This kit doesn't exist or has been removed."}</p>
+                    <Button
+                        onClick={() => navigate('/pooja-kits')}
+                        variant="outline"
+                        className="text-maroon hover:text-maroon-dark border-maroon/20 hover:bg-maroon/5"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" /> Back to All Kits
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     const getPrice = () => {
         if (selectedPlan === 'one_time') return kit.pricing.monthly;
@@ -169,10 +203,6 @@ const PoojaKitDetail = () => {
         const opt = SUBSCRIPTION_OPTIONS.find(o => o.id === selectedPlan);
         return opt?.label || '';
     };
-
-    // Removed STEPS array as we are moving to a single-view layout
-
-    // Removed handleNext and handleBack
 
     const handleAddToCart = () => {
         const plan = SUBSCRIPTION_OPTIONS.find(o => o.id === selectedPlan);
@@ -202,6 +232,11 @@ const PoojaKitDetail = () => {
             }
         });
     };
+
+    // Determine display subscription options based on category
+    const displaySubscriptionOptions = kit.category === 'daily'
+        ? SUBSCRIPTION_OPTIONS
+        : SUBSCRIPTION_OPTIONS.filter(o => o.id === 'one_time');
 
     const renderAccordions = () => (
         <>
@@ -271,67 +306,77 @@ const PoojaKitDetail = () => {
                 )}
             </div>
 
-            {/* Savings Table Upsell */}
-            <div className="bg-white rounded-2xl border border-border shadow-sm mb-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-marigold/10 rounded-bl-full -z-0 pointer-events-none" />
-                <button
-                    onClick={() => toggleSection('savings')}
-                    className="w-full flex items-center justify-between p-6 bg-transparent hover:bg-muted/10 transition-colors relative z-10"
-                >
-                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-marigold fill-marigold" /> Unlock Bigger Savings
-                    </h3>
-                    <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform duration-200 lg:hidden ${expandedSections.savings ? 'rotate-90' : ''}`} />
-                </button>
+            {/* Savings Table Upsell — only show for daily kits with subscription plans */}
+            {kit.category === 'daily' && kit.pricing.weekly > 0 && (
+                <div className="bg-white rounded-2xl border border-border shadow-sm mb-4 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-marigold/10 rounded-bl-full -z-0 pointer-events-none" />
+                    <button
+                        onClick={() => toggleSection('savings')}
+                        className="w-full flex items-center justify-between p-6 bg-transparent hover:bg-muted/10 transition-colors relative z-10"
+                    >
+                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-marigold fill-marigold" /> Unlock Bigger Savings
+                        </h3>
+                        <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform duration-200 lg:hidden ${expandedSections.savings ? 'rotate-90' : ''}`} />
+                    </button>
 
-                {expandedSections.savings && (
-                    <div className="px-6 pb-6 pt-0 border-t border-border/50 lg:border-t-0 lg:pt-0 relative z-10">
-                        <div className="overflow-hidden rounded-xl border border-border bg-white mt-4 lg:mt-0">
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-muted/30 text-[10px] text-muted-foreground uppercase tracking-wider">
-                                    <tr>
-                                        <th className="p-3 font-extrabold border-b border-border text-gray-600">Plan</th>
-                                        <th className="p-3 font-extrabold border-b border-border text-gray-600 whitespace-nowrap">Price</th>
-                                        <th className="p-3 font-extrabold border-b border-border text-right text-gray-600">Savings*</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border">
-                                    <tr className="hover:bg-muted/10 transition-colors">
-                                        <td className="p-3 font-semibold text-gray-800">Weekly</td>
-                                        <td className="p-3 font-medium">₹{kit.pricing.weekly}<span className="text-[10px] text-muted-foreground">/wk</span></td>
-                                        <td className="p-3 text-right text-muted-foreground font-medium">-</td>
-                                    </tr>
-                                    <tr className="hover:bg-muted/10 transition-colors">
-                                        <td className="p-3 font-semibold text-gray-800">Monthly</td>
-                                        <td className="p-3 font-medium">₹{kit.pricing.monthly}<span className="text-[10px] text-muted-foreground">/mo</span></td>
-                                        <td className="p-3 text-right font-black text-spiritual-green">
-                                            {Math.round((1 - (kit.pricing.monthly / (kit.pricing.weekly * 4))) * 100)}% Off
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-muted/10 transition-colors">
-                                        <td className="p-3 font-semibold text-gray-800">Quarterly</td>
-                                        <td className="p-3 font-medium">₹{kit.pricing.quarterly}<span className="text-[10px] text-muted-foreground">/qtr</span></td>
-                                        <td className="p-3 text-right font-black text-spiritual-green">
-                                            {Math.round((1 - (kit.pricing.quarterly / (kit.pricing.weekly * 12))) * 100)}% Off
-                                        </td>
-                                    </tr>
-                                    <tr className="bg-gradient-to-r from-marigold/10 to-marigold/5 hover:from-marigold/20 hover:to-marigold/10 transition-colors border-l-4 border-l-marigold">
-                                        <td className="p-3 font-black text-maroon-dark">
-                                            Yearly
-                                            <span className="block mt-0.5 text-[8px] bg-maroon text-white px-1.5 py-0.5 rounded uppercase tracking-widest w-fit">Best Value</span>
-                                        </td>
-                                        <td className="p-3 font-black text-maroon-dark">₹{kit.pricing.yearly}<span className="text-[10px] text-maroon/70">/yr</span></td>
-                                        <td className="p-3 text-right font-black text-green-700 text-base">
-                                            {Math.round((1 - (kit.pricing.yearly / (kit.pricing.weekly * 52))) * 100)}% Off
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    {expandedSections.savings && (
+                        <div className="px-6 pb-6 pt-0 border-t border-border/50 lg:border-t-0 lg:pt-0 relative z-10">
+                            <div className="overflow-hidden rounded-xl border border-border bg-white mt-4 lg:mt-0">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-muted/30 text-[10px] text-muted-foreground uppercase tracking-wider">
+                                        <tr>
+                                            <th className="p-3 font-extrabold border-b border-border text-gray-600">Plan</th>
+                                            <th className="p-3 font-extrabold border-b border-border text-gray-600 whitespace-nowrap">Price</th>
+                                            <th className="p-3 font-extrabold border-b border-border text-right text-gray-600">Savings*</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border">
+                                        {kit.pricing.weekly > 0 && (
+                                            <tr className="hover:bg-muted/10 transition-colors">
+                                                <td className="p-3 font-semibold text-gray-800">Weekly</td>
+                                                <td className="p-3 font-medium">₹{kit.pricing.weekly}<span className="text-[10px] text-muted-foreground">/wk</span></td>
+                                                <td className="p-3 text-right text-muted-foreground font-medium">-</td>
+                                            </tr>
+                                        )}
+                                        {kit.pricing.monthly > 0 && (
+                                            <tr className="hover:bg-muted/10 transition-colors">
+                                                <td className="p-3 font-semibold text-gray-800">Monthly</td>
+                                                <td className="p-3 font-medium">₹{kit.pricing.monthly}<span className="text-[10px] text-muted-foreground">/mo</span></td>
+                                                <td className="p-3 text-right font-black text-spiritual-green">
+                                                    {kit.pricing.weekly > 0 ? `${Math.round((1 - (kit.pricing.monthly / (kit.pricing.weekly * 4))) * 100)}% Off` : '-'}
+                                                </td>
+                                            </tr>
+                                        )}
+                                        {kit.pricing.quarterly > 0 && (
+                                            <tr className="hover:bg-muted/10 transition-colors">
+                                                <td className="p-3 font-semibold text-gray-800">Quarterly</td>
+                                                <td className="p-3 font-medium">₹{kit.pricing.quarterly}<span className="text-[10px] text-muted-foreground">/qtr</span></td>
+                                                <td className="p-3 text-right font-black text-spiritual-green">
+                                                    {kit.pricing.weekly > 0 ? `${Math.round((1 - (kit.pricing.quarterly / (kit.pricing.weekly * 12))) * 100)}% Off` : '-'}
+                                                </td>
+                                            </tr>
+                                        )}
+                                        {kit.pricing.yearly > 0 && (
+                                            <tr className="bg-gradient-to-r from-marigold/10 to-marigold/5 hover:from-marigold/20 hover:to-marigold/10 transition-colors border-l-4 border-l-marigold">
+                                                <td className="p-3 font-black text-maroon-dark">
+                                                    Yearly
+                                                    <span className="block mt-0.5 text-[8px] bg-maroon text-white px-1.5 py-0.5 rounded uppercase tracking-widest w-fit">Best Value</span>
+                                                </td>
+                                                <td className="p-3 font-black text-maroon-dark">₹{kit.pricing.yearly}<span className="text-[10px] text-maroon/70">/yr</span></td>
+                                                <td className="p-3 text-right font-black text-green-700 text-base">
+                                                    {kit.pricing.weekly > 0 ? `${Math.round((1 - (kit.pricing.yearly / (kit.pricing.weekly * 52))) * 100)}% Off` : '-'}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p className="text-[9px] text-muted-foreground mt-3 text-center uppercase tracking-wide font-medium">* Savings calculated vs standard weekly plan</p>
                         </div>
-                        <p className="text-[9px] text-muted-foreground mt-3 text-center uppercase tracking-wide font-medium">* Savings calculated vs standard weekly plan</p>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
 
             {/* Customer Reviews Section */}
             <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden mb-6 lg:mb-0">
@@ -436,7 +481,7 @@ const PoojaKitDetail = () => {
                                                     type: 'kit',
                                                     title: kit.name,
                                                     image: kit.images[0],
-                                                    price: kit.pricing.yearly,
+                                                    price: kit.pricing.yearly || kit.pricing.monthly,
                                                     rating: kit.rating,
                                                     reviewCount: kit.reviewCount
                                                 }}
@@ -492,7 +537,7 @@ const PoojaKitDetail = () => {
                                                     type: 'kit',
                                                     title: kit.name,
                                                     image: kit.images[0],
-                                                    price: kit.pricing.yearly,
+                                                    price: kit.pricing.yearly || kit.pricing.monthly,
                                                     rating: kit.rating,
                                                     reviewCount: kit.reviewCount
                                                 }}
@@ -544,20 +589,29 @@ const PoojaKitDetail = () => {
                             {/* Subscription Selection Box */}
                             <div className="bg-white rounded-2xl p-6 border border-border shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-6">
                                 <h2 className="text-xl font-heading font-bold text-gray-900 mb-1 flex items-center gap-2">
-                                    Choose Your Plan
+                                    {kit.category === 'daily' ? 'Choose Your Plan' : 'Pricing'}
                                 </h2>
-                                <p className="text-sm text-gray-500 mb-5">Subscribe & save up to 49% with longer plans.</p>
+                                {kit.category === 'daily' && (
+                                    <p className="text-sm text-gray-500 mb-5">Subscribe & save up to 49% with longer plans.</p>
+                                )}
 
                                 <div className="space-y-3 mb-6">
-                                    {SUBSCRIPTION_OPTIONS.map(option => {
+                                    {displaySubscriptionOptions.map(option => {
                                         const isSelected = selectedPlan === option.id;
                                         const currentPrice = option.id === 'one_time' ? kit.pricing.monthly : kit.pricing[option.id];
 
                                         // Calculate savings vs weekly base
                                         let savingsPercent = 0;
-                                        if (option.id === 'monthly') savingsPercent = Math.round((1 - (currentPrice / (kit.pricing.weekly * 4))) * 100);
-                                        if (option.id === 'quarterly') savingsPercent = Math.round((1 - (currentPrice / (kit.pricing.weekly * 12))) * 100);
-                                        if (option.id === 'yearly') savingsPercent = Math.round((1 - (currentPrice / (kit.pricing.weekly * 52))) * 100);
+                                        if (kit.pricing.weekly > 0) {
+                                            if (option.id === 'monthly') savingsPercent = Math.round((1 - (currentPrice / (kit.pricing.weekly * 4))) * 100);
+                                            if (option.id === 'quarterly') savingsPercent = Math.round((1 - (currentPrice / (kit.pricing.weekly * 12))) * 100);
+                                            if (option.id === 'yearly') savingsPercent = Math.round((1 - (currentPrice / (kit.pricing.weekly * 52))) * 100);
+                                        }
+
+                                        // For non-daily kits with market price, show discount
+                                        if (kit.category !== 'daily' && option.id === 'one_time' && kit.marketPrice && kit.offerPrice && kit.marketPrice > kit.offerPrice) {
+                                            savingsPercent = Math.round((1 - (kit.offerPrice / kit.marketPrice)) * 100);
+                                        }
 
                                         return (
                                             <label
@@ -582,9 +636,9 @@ const PoojaKitDetail = () => {
                                                     <div className="flex-1">
                                                         <div className="flex items-center flex-wrap gap-2 mb-1">
                                                             <span className={`font-bold text-base ${isSelected ? 'text-maroon-dark' : 'text-gray-900'}`}>
-                                                                {option.label}
+                                                                {kit.category === 'daily' ? option.label : kit.name}
                                                             </span>
-                                                            {option.badge && (
+                                                            {option.badge && kit.category === 'daily' && (
                                                                 <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${option.id === 'yearly'
                                                                     ? 'bg-marigold text-maroon-dark animate-pulse shadow-sm'
                                                                     : 'bg-marigold/20 text-maroon-dark'
@@ -599,7 +653,7 @@ const PoojaKitDetail = () => {
                                                             )}
                                                         </div>
                                                         <span className={`text-sm tracking-wide ${isSelected ? 'text-maroon/80 font-medium' : 'text-muted-foreground'}`}>
-                                                            {option.desc}
+                                                            {kit.category === 'daily' ? option.desc : kit.description}
                                                         </span>
                                                     </div>
 
@@ -607,6 +661,11 @@ const PoojaKitDetail = () => {
                                                         <div className={`text-xl font-black ${isSelected ? 'text-maroon-dark' : 'text-gray-900'}`}>
                                                             ₹{currentPrice}
                                                         </div>
+                                                        {kit.category !== 'daily' && kit.marketPrice && Number(kit.marketPrice) > currentPrice && (
+                                                            <div className="text-sm text-muted-foreground line-through">
+                                                                ₹{kit.marketPrice}
+                                                            </div>
+                                                        )}
                                                         <div className="text-[10px] text-muted-foreground uppercase font-semibold">
                                                             {option.id === 'one_time' ? 'total' : `/${option.id}`}
                                                         </div>
@@ -675,9 +734,6 @@ const PoojaKitDetail = () => {
                                     Secure 256-bit encrypted checkout
                                 </p>
                             </div>
-
-                            {/* Render Accordions on Mobile ONLY below the checkout */}
-                            {/* (Moved above logically per instructions) */}
                         </div>
                     </div>
                 </div>

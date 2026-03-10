@@ -1,108 +1,98 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Search, Sparkles, ArrowRight, Star, X, Package, Filter } from "lucide-react";
+import { Search, Sparkles, ArrowRight, Star, X, Package, Filter, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import axios from "axios";
+import { API_URL, getImageUrl } from "@/config";
 
-// Mock Pooja Kits Data
-const POOJA_KITS = [
-    {
-        id: 1, slug: "ganapati-pooja-kit",
-        name: "Ganapati Pooja Kit",
-        image: "/images/poojas/ganapathi_homam.png",
-        description: "Complete kit with modak mould, durva grass, red flowers, coconut, and all items for Ganesh worship.",
-        rating: 4.9, reviewCount: 238,
-        pricing: { weekly: 299, monthly: 899, quarterly: 2399, yearly: 7999 }
-    },
-    {
-        id: 2, slug: "shiva-abhishekam-kit",
-        name: "Abhishekam Kit",
-        image: "/images/poojas/abhishekam.png",
-        description: "Milk, curd, honey, ghee, sugar, vibhuti, bilva leaves and all essentials for Lord Shiva Abhishekam.",
-        rating: 4.8, reviewCount: 186,
-        pricing: { weekly: 349, monthly: 999, quarterly: 2699, yearly: 8999 }
-    },
-    {
-        id: 3, slug: "daily-pooja-kit",
-        name: "Daily Pooja Kit",
-        image: "/images/poojas/deeparadhana.png",
-        description: "Agarbatti, camphor, cotton wicks, kumkum, turmeric, flowers, and essentials for daily home worship.",
-        rating: 4.7, reviewCount: 412,
-        pricing: { weekly: 199, monthly: 599, quarterly: 1599, yearly: 4999 }
-    },
-    {
-        id: 4, slug: "lakshmi-pooja-kit",
-        name: "Lakshmi Pooja Kit",
-        image: "/images/poojas/lakshmi_pooja.png",
-        description: "Lotus flowers, kumkum, turmeric, coins, red cloth, and special items for Goddess Lakshmi worship.",
-        rating: 4.9, reviewCount: 167,
-        pricing: { weekly: 399, monthly: 1099, quarterly: 2999, yearly: 9999 }
-    },
-    {
-        id: 5, slug: "navagraha-pooja-kit",
-        name: "Navagraha Pooja Kit",
-        image: "/images/poojas/navagraha_shanti.png",
-        description: "Nine types of grains, flowers, navadhanyas, and pooja items for planetary blessings and peace.",
-        rating: 4.6, reviewCount: 98,
-        pricing: { weekly: 449, monthly: 1299, quarterly: 3499, yearly: 11999 }
-    },
-    {
-        id: 6, slug: "rudra-abhishekam-kit",
-        name: "Rudra Abhishekam Kit",
-        image: "/images/poojas/rudra_abhishekam.png",
-        description: "Premium silver items, panchamritam ingredients, bilva, rudraksha, and sacred materials for Rudra pooja.",
-        rating: 4.8, reviewCount: 134,
-        pricing: { weekly: 599, monthly: 1699, quarterly: 4599, yearly: 14999 }
-    },
-    {
-        id: 7, slug: "satyanarayana-kit",
-        name: "Satyanarayana Pooja Kit",
-        image: "/images/poojas/satyanarayana.png",
-        description: "Banana, jaggery, wheat flour, ghee, tulsi, and all materials for Satyanarayana Swamy Vratam.",
-        rating: 4.9, reviewCount: 298,
-        pricing: { weekly: 349, monthly: 999, quarterly: 2699, yearly: 8999 }
-    },
-    {
-        id: 8, slug: "vastu-pooja-kit",
-        name: "Vastu Pooja Kit",
-        image: "/images/poojas/vastu_shanti.png",
-        description: "Navadhanyas, kalash, mango leaves, sacred threads, and items for Vastu Shanti ceremony.",
-        rating: 4.5, reviewCount: 76,
-        pricing: { weekly: 499, monthly: 1399, quarterly: 3799, yearly: 12999 }
-    },
-];
+// Kit type matching backend schema
+interface PricingPlan {
+    id: string;
+    label: string;
+    price: number | string;
+    active: boolean;
+    badge: string;
+}
+
+interface Kit {
+    _id: string;
+    title: string;
+    shortDescription: string;
+    category: string;
+    image?: string;
+    defaultRating?: number;
+    reviewCount?: number;
+    itemsIncluded: { id: number; text: string }[];
+    pricingPlans?: PricingPlan[];
+    marketPrice?: number | string;
+    offerPrice?: number | string;
+}
 
 const alphabets = ["All", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")];
+
+// Helper to get display price from a kit
+const getKitPrice = (kit: Kit): number => {
+    if (kit.category === 'daily' && kit.pricingPlans?.length) {
+        const activePlans = kit.pricingPlans.filter(p => p.active && Number(p.price) > 0);
+        if (activePlans.length > 0) {
+            return Math.min(...activePlans.map(p => Number(p.price)));
+        }
+    }
+    if (kit.offerPrice && Number(kit.offerPrice) > 0) return Number(kit.offerPrice);
+    if (kit.marketPrice && Number(kit.marketPrice) > 0) return Number(kit.marketPrice);
+    return 0;
+};
 
 const PoojaKits = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedLetter, setSelectedLetter] = useState("All");
     const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const [kits, setKits] = useState<Kit[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch kits from backend
+    useEffect(() => {
+        const fetchKits = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await axios.get(`${API_URL.replace('/api', '/api/v1')}/kits`);
+                const data = Array.isArray(response.data) ? response.data : [];
+                setKits(data);
+            } catch (err) {
+                console.error("Failed to fetch pooja kits:", err);
+                setError("Failed to load pooja kits. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchKits();
+        window.scrollTo(0, 0);
+    }, []);
 
     const filteredKits = useMemo(() => {
-        let kits = [...POOJA_KITS];
+        let filtered = [...kits];
         if (searchTerm) {
-            kits = kits.filter(kit =>
-                kit.name.toLowerCase().includes(searchTerm.toLowerCase())
+            filtered = filtered.filter(kit =>
+                kit.title.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
         if (selectedLetter !== "All") {
-            kits = kits.filter(kit =>
-                kit.name.toUpperCase().startsWith(selectedLetter)
+            filtered = filtered.filter(kit =>
+                kit.title.toUpperCase().startsWith(selectedLetter)
             );
         }
-        kits.sort((a, b) => a.name.localeCompare(b.name));
-        return kits;
-    }, [searchTerm, selectedLetter]);
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+        return filtered;
+    }, [searchTerm, selectedLetter, kits]);
 
     const handleLetterClick = (letter: string) => {
         setSelectedLetter(letter);
         setSearchTerm("");
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
-
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
 
     return (
         <div className="min-h-screen bg-background">
@@ -122,7 +112,7 @@ const PoojaKits = () => {
                                     Pooja Kits
                                 </h1>
                                 <p className="text-xs text-muted-foreground font-medium mt-1">
-                                    {filteredKits.length} kits available · Delivered to your doorstep
+                                    {loading ? "Loading..." : `${filteredKits.length} kits available`} · Delivered to your doorstep
                                 </p>
                             </div>
                         </div>
@@ -177,68 +167,117 @@ const PoojaKits = () => {
 
             {/* Content Section */}
             <main className="container px-4 py-8 min-h-[60vh]">
-                {filteredKits.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filteredKits.map((kit, index) => (
-                            <div
-                                key={kit.id}
-                                className="group relative bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-border/30 hover:border-marigold/30 flex flex-col h-full animate-fade-in-up hover:-translate-y-1"
-                                style={{ animationDelay: `${index * 50}ms` }}
-                            >
-                                {/* Image Container */}
-                                <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                                    <img
-                                        src={kit.image}
-                                        alt={kit.name}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                    />
-                                    {/* Gradient Overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                                    {/* Floating Price Tag */}
-                                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-maroon-dark shadow-sm ring-1 ring-black/5">
-                                        ₹{kit.pricing.monthly}
-                                    </div>
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-5 flex flex-col flex-1">
-                                    <h3 className="font-heading text-xl font-bold text-maroon-dark mb-1 group-hover:text-marigold transition-colors line-clamp-1">
-                                        {kit.name}
-                                    </h3>
-
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border/50">
-                                            <Star className="w-3 h-3 text-marigold fill-marigold" />
-                                            {kit.rating}
-                                        </div>
-                                        <div className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border/50">
-                                            {kit.reviewCount} reviews
-                                        </div>
-                                    </div>
-
-                                    <p className="text-muted-foreground text-sm leading-relaxed mb-5 font-body flex-1 line-clamp-2">
-                                        {kit.description}
-                                    </p>
-
-                                    {/* Price & CTA */}
-                                    <div className="flex items-center justify-between mt-auto">
-                                        <div>
-                                            <div className="text-xl font-black text-maroon-dark">₹{kit.pricing.monthly}</div>
-                                            <div className="text-[10px] text-muted-foreground font-medium">Starting price</div>
-                                        </div>
-                                        <Link to={`/pooja-kit/${kit.slug}`}>
-                                            <Button className="bg-spiritual-green hover:bg-spiritual-green/90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 h-10 text-xs tracking-wide uppercase group/btn px-5">
-                                                <span className="mr-1">View Kit</span>
-                                                <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                {/* Loading State */}
+                {loading && (
+                    <div className="flex flex-col items-center justify-center py-24 text-center">
+                        <Loader2 className="w-10 h-10 text-marigold animate-spin mb-4" />
+                        <p className="text-muted-foreground font-medium">Loading pooja kits...</p>
                     </div>
-                ) : (
+                )}
+
+                {/* Error State */}
+                {!loading && error && (
+                    <div className="flex flex-col items-center justify-center py-24 text-center">
+                        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
+                            <X className="w-8 h-8 text-red-400" />
+                        </div>
+                        <h3 className="font-heading text-2xl font-bold text-maroon-dark mb-2">
+                            Something went wrong
+                        </h3>
+                        <p className="text-muted-foreground max-w-sm mx-auto mb-8">
+                            {error}
+                        </p>
+                        <Button
+                            onClick={() => window.location.reload()}
+                            variant="outline"
+                            className="text-maroon hover:text-maroon-dark border-maroon/20 hover:bg-maroon/5"
+                        >
+                            Try Again
+                        </Button>
+                    </div>
+                )}
+
+                {/* Kits Grid */}
+                {!loading && !error && filteredKits.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {filteredKits.map((kit, index) => {
+                            const displayPrice = getKitPrice(kit);
+                            const imageUrl = getImageUrl(kit.image);
+
+                            return (
+                                <div
+                                    key={kit._id}
+                                    className="group relative bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 border border-border/30 hover:border-marigold/30 flex flex-col h-full animate-fade-in-up hover:-translate-y-1"
+                                    style={{ animationDelay: `${index * 50}ms` }}
+                                >
+                                    {/* Image Container */}
+                                    <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                                        <img
+                                            src={imageUrl || "/images/poojas/deeparadhana.png"}
+                                            alt={kit.title}
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        />
+                                        {/* Gradient Overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                        {/* Floating Price Tag */}
+                                        {displayPrice > 0 && (
+                                            <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-maroon-dark shadow-sm ring-1 ring-black/5">
+                                                ₹{displayPrice}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="p-5 flex flex-col flex-1">
+                                        <h3 className="font-heading text-xl font-bold text-maroon-dark mb-1 group-hover:text-marigold transition-colors line-clamp-1">
+                                            {kit.title}
+                                        </h3>
+
+                                        <div className="flex items-center gap-2 mb-3">
+                                            {kit.defaultRating && (
+                                                <div className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border/50">
+                                                    <Star className="w-3 h-3 text-marigold fill-marigold" />
+                                                    {kit.defaultRating}
+                                                </div>
+                                            )}
+                                            {kit.reviewCount !== undefined && kit.reviewCount > 0 && (
+                                                <div className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border/50">
+                                                    {kit.reviewCount} reviews
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <p className="text-muted-foreground text-sm leading-relaxed mb-5 font-body flex-1 line-clamp-2">
+                                            {kit.shortDescription || "Complete pooja kit with all essential items."}
+                                        </p>
+
+                                        {/* Price & CTA */}
+                                        <div className="flex items-center justify-between mt-auto">
+                                            <div>
+                                                {displayPrice > 0 && (
+                                                    <>
+                                                        <div className="text-xl font-black text-maroon-dark">₹{displayPrice}</div>
+                                                        <div className="text-[10px] text-muted-foreground font-medium">Starting price</div>
+                                                    </>
+                                                )}
+                                            </div>
+                                            <Link to={`/pooja-kit/${kit._id}`}>
+                                                <Button className="bg-spiritual-green hover:bg-spiritual-green/90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 h-10 text-xs tracking-wide uppercase group/btn px-5">
+                                                    <span className="mr-1">View Kit</span>
+                                                    <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && !error && filteredKits.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mb-6 animate-pulse">
                             <Search className="w-8 h-8 text-muted-foreground/50" />
@@ -247,7 +286,9 @@ const PoojaKits = () => {
                             No kits found
                         </h3>
                         <p className="text-muted-foreground max-w-sm mx-auto mb-8">
-                            We couldn't find any pooja kits matching "{searchTerm}". Try a different search term.
+                            {searchTerm
+                                ? `We couldn't find any pooja kits matching "${searchTerm}". Try a different search term.`
+                                : "No pooja kits available at the moment. Please check back later."}
                         </p>
                         <Button
                             onClick={() => { setSearchTerm(""); setSelectedLetter("All"); }}
