@@ -19,6 +19,8 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import PanchangamModal from "./PanchangamModal";
 import AuthModal from "./AuthModal";
 import logo from "@/assets/logo.png";
@@ -44,38 +46,11 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const config = useAppConfig();
   const { favorites } = useFavorites();
-
-  // Read user from localStorage
-  const [user, setUser] = useState(() => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      return storedUser ? JSON.parse(storedUser) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  // Listen for auth changes (login/logout) to update UI without reload
-  useEffect(() => {
-    const handleAuthChange = () => {
-      try {
-        const storedUser = localStorage.getItem("user");
-        setUser(storedUser ? JSON.parse(storedUser) : null);
-      } catch {
-        setUser(null);
-      }
-    };
-
-    window.addEventListener('auth-change', handleAuthChange);
-    return () => window.removeEventListener('auth-change', handleAuthChange);
-  }, []);
+  const { cartCount, setIsCartOpen } = useCart();
+  const { user, login, logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
-    window.dispatchEvent(new Event('auth-change'));
-    toast({ title: "Logged Out", description: "You have been logged out successfully" });
+    logout();
   };
 
   const navLinks = [
@@ -150,7 +125,7 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
                             <button
                               onClick={() => {
                                 setIsMobileMenuOpen(false);
-                                setIsAuthOpen(true);
+                                login();
                               }}
                               className="text-xs text-maroon hover:text-maroon-dark font-medium transition-colors"
                             >
@@ -535,7 +510,7 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={() => setIsAuthOpen(true)}
+                      onClick={() => login()}
                       className="cursor-pointer py-2.5 px-3"
                     >
                       <LogIn className="mr-3 h-4 w-4 text-spiritual-green" />
@@ -640,12 +615,20 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
             </Link>
 
             {/* Cart */}
-            <Button variant="ghost" size="icon" className="relative hidden md:flex">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-sacred-red text-secondary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
-                2
-              </span>
-            </Button>
+            <Link to="/cart">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative hidden md:flex"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-sacred-red text-secondary-foreground text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-300">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
           </div>
         </div>
       </header>

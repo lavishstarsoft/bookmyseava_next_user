@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
 import AuthModal from "./AuthModal";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useCart } from "@/contexts/CartContext";
 
 const BottomNavigation = () => {
   const { t } = useTranslation();
@@ -12,12 +13,13 @@ const BottomNavigation = () => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const { favorites } = useFavorites();
+  const { cartCount, setIsCartOpen } = useCart();
 
   const navItems = [
     { id: "home", icon: Home, label: t('nav.home'), path: "/" },
     { id: "favorite", icon: Heart, label: t('common.favorite'), path: "/favorites", badge: favorites.length > 0 ? favorites.length : undefined },
     { id: "kits", icon: Package, label: t('nav.kits'), path: "/kits", isCenter: true },
-    { id: "cart", icon: ShoppingCart, label: t('common.cart'), path: "/cart", badge: 2 },
+    { id: "cart", icon: ShoppingCart, label: t('common.cart'), path: "/cart", badge: cartCount > 0 ? (cartCount > 99 ? '99+' : cartCount) : undefined },
     { id: "profile", icon: User, label: t('common.profile'), path: "/profile" },
   ];
 
@@ -42,7 +44,6 @@ const BottomNavigation = () => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               const isCenter = item.isCenter;
-
               return (
                 <button
                   key={item.id}

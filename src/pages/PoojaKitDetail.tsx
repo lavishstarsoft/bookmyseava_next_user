@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { useCart } from "@/contexts/CartContext";
 
 // Mock Kit Data
 const KITS_DATA: Record<string, {
@@ -130,10 +131,13 @@ const PoojaKitDetail = () => {
 
     const kit = KITS_DATA[slug || ''] || DEFAULT_KIT;
 
+    const { addToCart } = useCart();
+
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('monthly');
     const [selectedAddress, setSelectedAddress] = useState(1);
     const [activeImage, setActiveImage] = useState(0);
+    const [quantity, setQuantity] = useState(1);
 
     // Mobile Accordion State
     // true = expanded. By default all are closed on mobile (false). We'll handle this in the render logic.
@@ -170,13 +174,31 @@ const PoojaKitDetail = () => {
 
     // Removed handleNext and handleBack
 
+    const handleAddToCart = () => {
+        const plan = SUBSCRIPTION_OPTIONS.find(o => o.id === selectedPlan);
+        const cartId = `kit_${slug}_${selectedPlan}`;
+        addToCart({
+            id: cartId,
+            productId: slug || 'unknown',
+            title: kit.name,
+            image: kit.images[0] || kit.image,
+            price: getPrice(),
+            quantity: quantity,
+            type: 'pooja-kit',
+            selectedVersion: plan
+                ? { id: plan.id, title: plan.label, desc: plan.desc }
+                : undefined,
+        });
+    };
+
     const handlePlaceOrder = () => {
         navigate(`/checkout/kit/${slug}`, {
             state: {
                 title: kit.name,
                 image: kit.images[0] || kit.image,
                 price: getPrice(),
-                planLabel: getPlanLabel()
+                planLabel: getPlanLabel(),
+                quantity: quantity
             }
         });
     };
@@ -514,6 +536,11 @@ const PoojaKitDetail = () => {
                                 <p className="text-gray-600 leading-relaxed font-medium">{kit.description}</p>
                             </div>
 
+                            {/* Render Accordions on Mobile ONLY ABOVE the checkout options */}
+                            <div className="block lg:hidden mt-6 mb-6">
+                                {renderAccordions()}
+                            </div>
+
                             {/* Subscription Selection Box */}
                             <div className="bg-white rounded-2xl p-6 border border-border shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-6">
                                 <h2 className="text-xl font-heading font-bold text-gray-900 mb-1 flex items-center gap-2">
@@ -592,11 +619,31 @@ const PoojaKitDetail = () => {
 
                                 <Separator className="my-6" />
 
+                                {/* Quantity Selector */}
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Quantity</div>
+                                    <div className="flex items-center gap-4 bg-muted/30 px-3 py-1.5 rounded-xl border border-border">
+                                        <button
+                                            onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                                            className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center font-bold text-lg hover:bg-muted/50 transition-colors"
+                                        >
+                                            -
+                                        </button>
+                                        <span className="font-bold text-lg w-6 text-center">{quantity}</span>
+                                        <button
+                                            onClick={() => setQuantity(q => q + 1)}
+                                            className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center font-bold text-lg hover:bg-muted/50 transition-colors"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+
                                 {/* Total & Buy Action */}
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <div className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Total Price</div>
-                                        <div className="text-4xl font-black text-maroon-dark">₹{getPrice()}</div>
+                                        <div className="text-4xl font-black text-maroon-dark">₹{getPrice() * quantity}</div>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-sm font-bold text-spiritual-green flex items-center justify-end gap-1">
@@ -605,6 +652,15 @@ const PoojaKitDetail = () => {
                                         <div className="text-xs text-muted-foreground font-medium">Delivery in 2-3 days</div>
                                     </div>
                                 </div>
+
+                                <Button
+                                    variant="outline"
+                                    onClick={handleAddToCart}
+                                    className="w-full h-14 border-2 border-maroon text-maroon hover:bg-maroon/5 font-black rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-lg uppercase tracking-wide mb-4 group"
+                                >
+                                    <ShoppingCart className="w-5 h-5 mr-2" />
+                                    Add to Cart
+                                </Button>
 
                                 <Button
                                     onClick={handlePlaceOrder}
@@ -621,9 +677,7 @@ const PoojaKitDetail = () => {
                             </div>
 
                             {/* Render Accordions on Mobile ONLY below the checkout */}
-                            <div className="block lg:hidden mt-6">
-                                {renderAccordions()}
-                            </div>
+                            {/* (Moved above logically per instructions) */}
                         </div>
                     </div>
                 </div>

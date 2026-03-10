@@ -21,7 +21,10 @@ import PoojaKits from "./pages/PoojaKits";
 import PoojaKitDetail from "./pages/PoojaKitDetail";
 import ScrollToTop from "./components/ScrollToTop";
 import { FavoritesProvider } from "./contexts/FavoritesContext";
+import { CartProvider } from "./contexts/CartContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import Favorites from "./pages/Favorites";
+import Cart from "./pages/Cart";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,34 +46,40 @@ persistQueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <FavoritesProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter basename="/">
-          <ScrollToTop />
-          <FloatingAudioPlayer />
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/book-pooja" element={<BookPooja />} />
-              <Route path="/pooja/:slug" element={<PoojaDetail />} />
-              <Route path="/checkout/:type/:slug" element={<Checkout />} />
-              <Route path="/pooja-kits" element={<PoojaKits />} />
-              <Route path="/pooja-kit/:slug" element={<PoojaKitDetail />} />
-              <Route path="/live-darshan" element={<LiveDarshan />} />
-              <Route path="/favorites" element={<Favorites />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:id" element={<BlogPost />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/about" element={<About />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </BrowserRouter>
-      </TooltipProvider>
-    </FavoritesProvider>
+    <AuthProvider>
+      <FavoritesProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter basename="/">
+              <ScrollToTop />
+              <FloatingAudioPlayer />
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/book-pooja" element={<BookPooja />} />
+                  <Route path="/pooja/:slug" element={<PoojaDetail />} />
+                  <Route path="/checkout/secure" element={<Checkout />} />
+                  <Route path="/checkout/:type/:slug" element={<Checkout />} />
+                  <Route path="/pooja-kits" element={<PoojaKits />} />
+                  <Route path="/pooja-kit/:slug" element={<PoojaKitDetail />} />
+                  <Route path="/live-darshan" element={<LiveDarshan />} />
+                  <Route path="/favorites" element={<Favorites />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:id" element={<BlogPost />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/about" element={<About />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Layout>
+            </BrowserRouter>
+          </TooltipProvider>
+        </CartProvider>
+      </FavoritesProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

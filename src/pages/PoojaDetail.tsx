@@ -8,6 +8,7 @@ import { FavoriteButton } from "@/components/FavoriteButton";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 import {
     Select,
     SelectContent,
@@ -112,6 +113,7 @@ const PoojaDetail = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
     const { toast } = useToast();
+    const { addToCart } = useCart();
 
     const [activeImage, setActiveImage] = useState(0);
     const [selectedVersion, setSelectedVersion] = useState(VERSIONS[0]);
@@ -125,6 +127,24 @@ const PoojaDetail = () => {
     }, []);
 
     const subTotal = selectedVersion.price + selectedAddon.price;
+
+    const handleAddToCart = () => {
+        const cartId = `pooja_${slug}_${selectedVersion.id}_${selectedAddon.id}`;
+        addToCart({
+            id: cartId,
+            productId: slug || 'unknown',
+            title: `${poojaDetails.title}`,
+            image: poojaDetails.images[0],
+            price: subTotal,
+            quantity: 1,
+            type: 'pooja',
+            selectedVersion: {
+                id: selectedVersion.id,
+                title: selectedVersion.title,
+                desc: `${selectedVersion.title}${selectedAddon.id !== 'none' ? ' + ' + selectedAddon.label : ''}`,
+            },
+        });
+    };
 
     const handleProceed = () => {
         navigate(`/checkout/pooja/${slug}`, {
@@ -516,9 +536,7 @@ const PoojaDetail = () => {
 
                             <Button
                                 variant="outline"
-                                onClick={() => {
-                                    toast({ title: "Added to Cart 🛒", description: `${poojaDetails.title} (${selectedVersion.title}) added to your cart.` });
-                                }}
+                                onClick={handleAddToCart}
                                 className="w-full h-12 text-sm border-2 border-maroon text-maroon hover:text-maroon hover:bg-maroon/5 font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-300 mb-3 tracking-wide uppercase"
                             >
                                 <ShoppingCart className="w-4 h-4 mr-2" />
