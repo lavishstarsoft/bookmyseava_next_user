@@ -5,15 +5,15 @@ import { useNavigate, useLocation } from "react-router-dom";
 import AuthModal from "./AuthModal";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const BottomNavigation = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-
   const { favorites } = useFavorites();
   const { cartCount, setIsCartOpen } = useCart();
+  const { openAuthModal, isAuthenticated } = useAuth();
 
   const navItems = [
     { id: "home", icon: Home, label: t('nav.home'), path: "/" },
@@ -24,13 +24,12 @@ const BottomNavigation = () => {
   ];
 
   const handleProfileClick = () => {
-    const token = localStorage.getItem("token");
-    if (token) {
+    if (isAuthenticated) {
       // User is logged in, navigate to profile page
       navigate("/profile");
     } else {
       // User is not logged in, show auth modal
-      setIsAuthOpen(true);
+      openAuthModal();
     }
   };
 
@@ -95,9 +94,6 @@ const BottomNavigation = () => {
           </div>
         </div>
       </nav>
-
-      {/* Auth Modal */}
-      <AuthModal open={isAuthOpen} onOpenChange={setIsAuthOpen} />
     </>
   );
 };

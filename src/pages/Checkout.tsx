@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // We don't need mock data for pooja details here anymore, we will primarily rely on location.state
 
@@ -85,9 +86,16 @@ const Checkout = () => {
     const [couponCode, setCouponCode] = useState("");
     const [useCoins, setUseCoins] = useState(false);
 
-    // Mock User State
-    const [isLoggedIn] = useState(true);
+    const { isAuthenticated, openAuthModal } = useAuth();
     const [selectedAddress, setSelectedAddress] = useState(1);
+
+    // Redirect if not logged in
+    useEffect(() => {
+        if (!isAuthenticated) {
+            openAuthModal();
+            navigate(-1);
+        }
+    }, [isAuthenticated, openAuthModal, navigate]);
 
     // Calculations based on multi-item setup
     const serviceFee = 50;
@@ -244,7 +252,7 @@ const Checkout = () => {
                                     Booking Details & Address
                                 </h2>
 
-                                {!isLoggedIn ? (
+                                {!isAuthenticated ? (
                                     <div className="text-center py-8 bg-muted/20 rounded-lg border border-dashed border-border">
                                         <ShieldCheck className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
                                         <h3 className="font-bold text-lg mb-2">Login to Continue</h3>
@@ -279,7 +287,7 @@ const Checkout = () => {
 
                                 <div className="mt-8 flex justify-between">
                                     <Button variant="outline" onClick={prevStep}>Back</Button>
-                                    <Button onClick={nextStep} className="bg-spiritual-green hover:bg-spiritual-green/90 text-white px-8" disabled={!isLoggedIn}>
+                                    <Button onClick={nextStep} className="bg-spiritual-green hover:bg-spiritual-green/90 text-white px-8" disabled={!isAuthenticated}>
                                         Continue to Payment <ChevronRight className="w-4 h-4 ml-2" />
                                     </Button>
                                 </div>

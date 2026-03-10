@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import {
     Select,
     SelectContent,
@@ -114,6 +115,7 @@ const PoojaDetail = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
     const { addToCart } = useCart();
+    const { requireAuth } = useAuth();
 
     const [activeImage, setActiveImage] = useState(0);
     const [selectedVersion, setSelectedVersion] = useState(VERSIONS[0]);
@@ -129,32 +131,36 @@ const PoojaDetail = () => {
     const subTotal = selectedVersion.price + selectedAddon.price;
 
     const handleAddToCart = () => {
-        const cartId = `pooja_${slug}_${selectedVersion.id}_${selectedAddon.id}`;
-        addToCart({
-            id: cartId,
-            productId: slug || 'unknown',
-            title: `${poojaDetails.title}`,
-            image: poojaDetails.images[0],
-            price: subTotal,
-            quantity: 1,
-            type: 'pooja',
-            selectedVersion: {
-                id: selectedVersion.id,
-                title: selectedVersion.title,
-                desc: `${selectedVersion.title}${selectedAddon.id !== 'none' ? ' + ' + selectedAddon.label : ''}`,
-            },
+        requireAuth(() => {
+            const cartId = `pooja_${slug}_${selectedVersion.id}_${selectedAddon.id}`;
+            addToCart({
+                id: cartId,
+                productId: slug || 'unknown',
+                title: `${poojaDetails.title}`,
+                image: poojaDetails.images[0],
+                price: subTotal,
+                quantity: 1,
+                type: 'pooja',
+                selectedVersion: {
+                    id: selectedVersion.id,
+                    title: selectedVersion.title,
+                    desc: `${selectedVersion.title}${selectedAddon.id !== 'none' ? ' + ' + selectedAddon.label : ''}`,
+                },
+            });
         });
     };
 
     const handleProceed = () => {
-        navigate(`/checkout/pooja/${slug}`, {
-            state: {
-                title: poojaDetails.title,
-                image: poojaDetails.images[0],
-                version: selectedVersion,
-                addon: selectedAddon,
-                total: subTotal
-            }
+        requireAuth(() => {
+            navigate(`/checkout/pooja/${slug}`, {
+                state: {
+                    title: poojaDetails.title,
+                    image: poojaDetails.images[0],
+                    version: selectedVersion,
+                    addon: selectedAddon,
+                    total: subTotal
+                }
+            });
         });
     };
 

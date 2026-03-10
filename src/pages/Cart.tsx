@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShoppingCart, Check, Trash2, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getImageUrl } from '@/config';
@@ -45,14 +46,18 @@ const Cart = () => {
 
     const isAllSelected = cartItems.length > 0 && selectedIds.size === cartItems.length;
 
+    const { isAuthenticated, requireAuth } = useAuth();
+
     const handleProceedToBuy = () => {
         if (selectedCount === 0) return;
 
-        // Store the selected items in the global checkout context
-        setCheckoutItems(selectedItems);
+        requireAuth(() => {
+            // Store the selected items in the global checkout context
+            setCheckoutItems(selectedItems);
 
-        // Navigate to the unified checkout flow
-        navigate(`/checkout/secure`);
+            // Navigate to the unified checkout flow
+            navigate(`/checkout/secure`);
+        });
     };
 
     if (cartItems.length === 0) {

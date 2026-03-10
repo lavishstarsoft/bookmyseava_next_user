@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import BottomNavigation from "@/components/BottomNavigation";
 import LiveStreamCard from "@/components/LiveStreamCard";
 import ChatbotWidget from "@/components/ChatbotWidget";
+import AuthModal from "@/components/AuthModal";
 import { useLiveCardState } from "@/hooks/useLiveCardState";
 import { useLocation } from "react-router-dom";
 
@@ -43,6 +44,9 @@ const Layout = ({ children }: LayoutProps) => {
 
             {/* Bottom Navigation (Mobile Only) */}
             <BottomNavigation />
+
+            {/* Auth Modal (Global) */}
+            <AuthModal />
 
             {/* Safe Area Padding for Mobile */}
             <div className="h-16 md:hidden" />

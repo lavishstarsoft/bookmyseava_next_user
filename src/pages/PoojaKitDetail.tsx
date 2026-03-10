@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
 import { API_URL, getImageUrl } from "@/config";
 
@@ -113,6 +114,7 @@ const PoojaKitDetail = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
     const { addToCart } = useCart();
+    const { requireAuth } = useAuth();
 
     const [kit, setKit] = useState<KitDisplay | null>(null);
     const [loading, setLoading] = useState(true);
@@ -205,31 +207,37 @@ const PoojaKitDetail = () => {
     };
 
     const handleAddToCart = () => {
-        const plan = SUBSCRIPTION_OPTIONS.find(o => o.id === selectedPlan);
-        const cartId = `kit_${slug}_${selectedPlan}`;
-        addToCart({
-            id: cartId,
-            productId: slug || 'unknown',
-            title: kit.name,
-            image: kit.images[0] || kit.image,
-            price: getPrice(),
-            quantity: quantity,
-            type: 'pooja-kit',
-            selectedVersion: plan
-                ? { id: plan.id, title: plan.label, desc: plan.desc }
-                : undefined,
+        requireAuth(() => {
+            if (!kit) return;
+            const plan = SUBSCRIPTION_OPTIONS.find(o => o.id === selectedPlan);
+            const cartId = `kit_${slug}_${selectedPlan}`;
+            addToCart({
+                id: cartId,
+                productId: slug || 'unknown',
+                title: kit.name,
+                image: kit.images[0] || kit.image,
+                price: getPrice(),
+                quantity: quantity,
+                type: 'pooja-kit',
+                selectedVersion: plan
+                    ? { id: plan.id, title: plan.label, desc: plan.desc }
+                    : undefined,
+            });
         });
     };
 
     const handlePlaceOrder = () => {
-        navigate(`/checkout/kit/${slug}`, {
-            state: {
-                title: kit.name,
-                image: kit.images[0] || kit.image,
-                price: getPrice(),
-                planLabel: getPlanLabel(),
-                quantity: quantity
-            }
+        requireAuth(() => {
+            if (!kit) return;
+            navigate(`/checkout/kit/${slug}`, {
+                state: {
+                    title: kit.name,
+                    image: kit.images[0] || kit.image,
+                    price: getPrice(),
+                    planLabel: getPlanLabel(),
+                    quantity: quantity
+                }
+            });
         });
     };
 
@@ -457,7 +465,7 @@ const PoojaKitDetail = () => {
                                                 key={idx}
                                                 onMouseEnter={() => setActiveImage(idx)}
                                                 onClick={() => setActiveImage(idx)}
-                                                className={`w-[58px] h-[58px] rounded-md overflow-hidden border-2 transition-all duration-200 bg-white p-1 ${activeImage === idx ? 'border-maroon-dark shadow-sm' : 'border-border/60 hover:border-maroon-dark opacity-75 hover:opacity-100'}`}
+                                                className={`w - [58px] h - [58px] rounded - md overflow - hidden border - 2 transition - all duration - 200 bg - white p - 1 ${activeImage === idx ? 'border-maroon-dark shadow-sm' : 'border-border/60 hover:border-maroon-dark opacity-75 hover:opacity-100'} `}
                                             >
                                                 <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-contain" />
                                             </button>
@@ -616,10 +624,10 @@ const PoojaKitDetail = () => {
                                         return (
                                             <label
                                                 key={option.id}
-                                                className={`flex items-start justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 relative overflow-hidden ${isSelected
+                                                className={`flex items - start justify - between p - 4 rounded - xl border - 2 cursor - pointer transition - all duration - 300 relative overflow - hidden ${isSelected
                                                     ? 'border-maroon bg-maroon/5 shadow-md'
                                                     : 'border-border hover:border-maroon/30 hover:bg-muted/20 hover:shadow-sm'
-                                                    }`}
+                                                    } `}
                                                 onClick={() => setSelectedPlan(option.id)}
                                             >
                                                 {/* Best Value Highlight Background */}
@@ -628,8 +636,8 @@ const PoojaKitDetail = () => {
                                                 )}
 
                                                 <div className="flex items-start gap-4 relative z-10 w-full">
-                                                    <div className={`w-6 h-6 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'border-maroon bg-maroon' : 'border-gray-300'
-                                                        }`}>
+                                                    <div className={`w - 6 h - 6 mt - 0.5 rounded - full border - 2 flex items - center justify - center shrink - 0 transition - colors ${isSelected ? 'border-maroon bg-maroon' : 'border-gray-300'
+                                                        } `}>
                                                         {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                                                     </div>
 
@@ -639,10 +647,10 @@ const PoojaKitDetail = () => {
                                                                 {kit.category === 'daily' ? option.label : kit.name}
                                                             </span>
                                                             {option.badge && kit.category === 'daily' && (
-                                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${option.id === 'yearly'
+                                                                <span className={`text - [10px] font - black px - 2 py - 0.5 rounded uppercase tracking - wider ${option.id === 'yearly'
                                                                     ? 'bg-marigold text-maroon-dark animate-pulse shadow-sm'
                                                                     : 'bg-marigold/20 text-maroon-dark'
-                                                                    }`}>
+                                                                    } `}>
                                                                     {option.badge}
                                                                 </span>
                                                             )}
@@ -667,7 +675,7 @@ const PoojaKitDetail = () => {
                                                             </div>
                                                         )}
                                                         <div className="text-[10px] text-muted-foreground uppercase font-semibold">
-                                                            {option.id === 'one_time' ? 'total' : `/${option.id}`}
+                                                            {option.id === 'one_time' ? 'total' : `/ ${option.id}`}
                                                         </div>
                                                     </div>
                                                 </div>

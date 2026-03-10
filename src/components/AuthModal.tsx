@@ -12,12 +12,10 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, Dr
 import { useIsMobile } from "@/hooks/use-mobile";
 import { User, Mail, Lock, Phone, Eye, EyeOff, X, Globe, ArrowLeft } from "lucide-react";
 
-interface AuthModalProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-}
+import { useAuth } from "@/contexts/AuthContext";
 
-const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
+const AuthModal = () => {
+    const { isAuthModalOpen: open, closeAuthModal: onOpenChange } = useAuth();
     const { toast } = useToast();
     const isMobile = useIsMobile();
     const [activeTab, setActiveTab] = useState("login");
@@ -139,7 +137,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                     variant: "default"
                 });
 
-                onOpenChange(false);
+                onOpenChange();
             } catch (error: any) {
                 // Check if error is due to user not found (unregistered)
                 if (error.message.includes('User not found') || error.message.includes('register first')) {
@@ -268,7 +266,7 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                     variant: "default"
                 });
 
-                onOpenChange(false);
+                onOpenChange();
             } catch (error: any) {
                 toast({
                     title: "Verification Failed",

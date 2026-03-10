@@ -42,12 +42,11 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
   const { toast } = useToast();
   const [isPanchangamOpen, setIsPanchangamOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const config = useAppConfig();
   const { favorites } = useFavorites();
   const { cartCount, setIsCartOpen } = useCart();
-  const { user, login, logout } = useAuth();
+  const { user, openAuthModal, logout } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -125,7 +124,7 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
                             <button
                               onClick={() => {
                                 setIsMobileMenuOpen(false);
-                                login();
+                                openAuthModal();
                               }}
                               className="text-xs text-maroon hover:text-maroon-dark font-medium transition-colors"
                             >
@@ -510,7 +509,7 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={() => login()}
+                      onClick={() => openAuthModal()}
                       className="cursor-pointer py-2.5 px-3"
                     >
                       <LogIn className="mr-3 h-4 w-4 text-spiritual-green" />
@@ -635,9 +634,6 @@ const Header = ({ isLiveCardDismissed, onLiveButtonClick }: HeaderProps = {}) =>
 
       {/* Panchangam Modal */}
       <PanchangamModal open={isPanchangamOpen} onOpenChange={setIsPanchangamOpen} />
-
-      {/* Auth Modal */}
-      <AuthModal open={isAuthOpen} onOpenChange={setIsAuthOpen} />
     </>
   );
 };
