@@ -44,7 +44,7 @@ interface KitDisplay {
     longDescription: string;
     rating: number;
     reviewCount: number;
-    pricing: { weekly: number; monthly: number; quarterly: number; yearly: number };
+    pricing: Record<string, number>;
     items: string[];
     category: string;
     pricingPlans?: PricingPlan[];
@@ -57,23 +57,15 @@ const toDisplayKit = (kit: BackendKit): KitDisplay => {
     const imageUrl = getImageUrl(kit.image) || "/images/poojas/deeparadhana.png";
 
     // Build pricing from pricingPlans or market/offer price
-    let pricing = { weekly: 0, monthly: 0, quarterly: 0, yearly: 0 };
+    const pricing: Record<string, number> = {};
 
     if (kit.category === 'daily' && kit.pricingPlans?.length) {
-        const planMap: Record<string, number> = {};
         kit.pricingPlans.forEach(p => {
-            const key = p.id.replace('one-time', 'monthly');
-            planMap[key] = Number(p.price) || 0;
+            pricing[p.id] = Number(p.price) || 0;
         });
-        pricing = {
-            weekly: planMap['weekly'] || 0,
-            monthly: planMap['monthly'] || planMap['one-time'] || 0,
-            quarterly: planMap['quarterly'] || 0,
-            yearly: planMap['yearly'] || 0,
-        };
     } else {
         const price = Number(kit.offerPrice) || Number(kit.marketPrice) || 0;
-        pricing = { weekly: price, monthly: price, quarterly: price, yearly: price };
+        pricing.default = price;
     }
 
     return {
@@ -93,15 +85,8 @@ const toDisplayKit = (kit: BackendKit): KitDisplay => {
     };
 };
 
-type SubscriptionPlan = 'one_time' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+type SubscriptionPlan = string;
 
-const SUBSCRIPTION_OPTIONS: { id: SubscriptionPlan; label: string; desc: string; badge?: string }[] = [
-    { id: 'one_time', label: 'One-Time Purchase', desc: 'Single delivery, no commitment' },
-    { id: 'weekly', label: 'Weekly Subscription', desc: 'Fresh items delivered every week' },
-    { id: 'monthly', label: 'Monthly Subscription', desc: 'Best for regular home worship', badge: 'Popular' },
-    { id: 'quarterly', label: 'Quarterly Subscription', desc: 'Save 10% on 3-month plan', badge: 'Save 10%' },
-    { id: 'yearly', label: 'Annual Subscription', desc: 'Best value — save 25%', badge: 'Best Value' },
-];
 
 const MOCK_REVIEWS = [
     { id: 1, user: "Srinivas Rao", rating: 5, date: "12 Oct 2023", text: "Very authentic and fresh items. The pandit curated selection perfectly matched our needs. Saved a lot of time searching for individual items in the market." },
@@ -120,7 +105,7 @@ const PoojaKitDetail = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('monthly');
+    const [selectedPlan, setSelectedPlan] = useState<string>("");
     const [activeImage, setActiveImage] = useState(0);
     const [quantity, setQuantity] = useState(1);
 
@@ -146,6 +131,10 @@ const PoojaKitDetail = () => {
                 const response = await axios.get(`${API_URL.replace('/api', '/api/v1')}/kits/${slug}`);
                 const backendKit: BackendKit = response.data;
                 setKit(toDisplayKit(backendKit));
+
+                // Select default plan
+                const activePlan = backendKit.pricingPlans?.find(p => p.active);
+                setSelectedPlan(activePlan?.id || "default");
             } catch (err) {
                 console.error("Failed to fetch kit:", err);
                 setError("Failed to load kit details. Please try again.");
@@ -161,6 +150,7 @@ const PoojaKitDetail = () => {
             setExpandedSections({ about: true, items: true, savings: true, reviews: true });
         }
     }, [slug]);
+
 
     // Loading state
     if (loading) {
@@ -197,19 +187,20 @@ const PoojaKitDetail = () => {
     }
 
     const getPrice = () => {
-        if (selectedPlan === 'one_time') return kit.pricing.monthly;
-        return kit.pricing[selectedPlan];
+        if (!kit) return 0;
+        return kit.pricing[selectedPlan] || kit.offerPrice || kit.marketPrice || 0;
     };
 
     const getPlanLabel = () => {
-        const opt = SUBSCRIPTION_OPTIONS.find(o => o.id === selectedPlan);
-        return opt?.label || '';
+        if (!kit) return '';
+        const plan = kit.pricingPlans?.find(p => p.id === selectedPlan);
+        return plan?.label || (kit.category === 'daily' ? '' : 'One-Time Purchase');
     };
 
     const handleAddToCart = () => {
         requireAuth(() => {
             if (!kit) return;
-            const plan = SUBSCRIPTION_OPTIONS.find(o => o.id === selectedPlan);
+            const plan = kit.pricingPlans?.find(p => p.id === selectedPlan);
             const cartId = `kit_${slug}_${selectedPlan}`;
             addToCart({
                 id: cartId,
@@ -220,8 +211,8 @@ const PoojaKitDetail = () => {
                 quantity: quantity,
                 type: 'pooja-kit',
                 selectedVersion: plan
-                    ? { id: plan.id, title: plan.label, desc: plan.desc }
-                    : undefined,
+                    ? { id: plan.id, title: plan.label, desc: plan.badge || "" }
+                    : { id: 'one_time', title: 'One-Time Purchase', desc: '' },
             });
         });
     };
@@ -243,8 +234,8 @@ const PoojaKitDetail = () => {
 
     // Determine display subscription options based on category
     const displaySubscriptionOptions = kit.category === 'daily'
-        ? SUBSCRIPTION_OPTIONS
-        : SUBSCRIPTION_OPTIONS.filter(o => o.id === 'one_time');
+        ? (kit.pricingPlans?.filter(p => p.active) || [])
+        : [{ id: 'default', label: 'One-Time Purchase', badge: '' }];
 
     const renderAccordions = () => (
         <>
@@ -606,14 +597,12 @@ const PoojaKitDetail = () => {
                                 <div className="space-y-3 mb-6">
                                     {displaySubscriptionOptions.map(option => {
                                         const isSelected = selectedPlan === option.id;
-                                        const currentPrice = option.id === 'one_time' ? kit.pricing.monthly : kit.pricing[option.id];
+                                        const currentPrice = kit.pricing[option.id];
 
-                                        // Calculate savings vs weekly base
+                                        // Calculate savings vs market price if applicable
                                         let savingsPercent = 0;
-                                        if (kit.pricing.weekly > 0) {
-                                            if (option.id === 'monthly') savingsPercent = Math.round((1 - (currentPrice / (kit.pricing.weekly * 4))) * 100);
-                                            if (option.id === 'quarterly') savingsPercent = Math.round((1 - (currentPrice / (kit.pricing.weekly * 12))) * 100);
-                                            if (option.id === 'yearly') savingsPercent = Math.round((1 - (currentPrice / (kit.pricing.weekly * 52))) * 100);
+                                        if (kit.marketPrice && kit.marketPrice > currentPrice) {
+                                            savingsPercent = Math.round((1 - (currentPrice / Number(kit.marketPrice))) * 100);
                                         }
 
                                         // For non-daily kits with market price, show discount
@@ -661,7 +650,7 @@ const PoojaKitDetail = () => {
                                                             )}
                                                         </div>
                                                         <span className={`text-sm tracking-wide ${isSelected ? 'text-maroon/80 font-medium' : 'text-muted-foreground'}`}>
-                                                            {kit.category === 'daily' ? option.desc : kit.description}
+                                                            {kit.category === 'daily' ? (option as any).desc || kit.description : kit.description}
                                                         </span>
                                                     </div>
 
