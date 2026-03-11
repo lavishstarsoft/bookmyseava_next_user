@@ -42,6 +42,12 @@ interface BackendKit {
         panditCurated?: boolean;
         easyCancel?: boolean;
     };
+    shipping?: {
+        freeShipping?: boolean;
+        shippingLabel?: string;
+        deliveryText?: string;
+        showShipping?: boolean;
+    };
 }
 
 // Normalized kit for UI
@@ -66,6 +72,12 @@ interface KitDisplay {
         doorstepDelivery: boolean;
         panditCurated: boolean;
         easyCancel: boolean;
+    };
+    shipping: {
+        freeShipping: boolean;
+        shippingLabel: string;
+        deliveryText: string;
+        showShipping: boolean;
     };
 }
 
@@ -114,6 +126,12 @@ const toDisplayKit = (kit: BackendKit): KitDisplay => {
             doorstepDelivery: kit.badges?.doorstepDelivery ?? true,
             panditCurated: kit.badges?.panditCurated ?? true,
             easyCancel: kit.badges?.easyCancel ?? true,
+        },
+        shipping: {
+            freeShipping: kit.shipping?.freeShipping ?? true,
+            shippingLabel: kit.shipping?.shippingLabel || 'Free Shipping',
+            deliveryText: kit.shipping?.deliveryText || 'Delivery in 2-3 days',
+            showShipping: kit.shipping?.showShipping ?? true,
         },
     };
 };
@@ -509,7 +527,7 @@ const PoojaKitDetail = () => {
                                                 key={idx}
                                                 onMouseEnter={() => setActiveImage(idx)}
                                                 onClick={() => setActiveImage(idx)}
-                                                className={`w - [58px] h - [58px] rounded - md overflow - hidden border - 2 transition - all duration - 200 bg - white p - 1 ${activeImage === idx ? 'border-maroon-dark shadow-sm' : 'border-border/60 hover:border-maroon-dark opacity-75 hover:opacity-100'} `}
+                                                className={`w-[58px] h-[58px] rounded-md overflow-hidden border-2 transition-all duration-200 bg-white p-1 ${activeImage === idx ? 'border-maroon-dark shadow-sm' : 'border-border/60 hover:border-maroon-dark opacity-75 hover:opacity-100'}`}
                                             >
                                                 <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-contain" />
                                             </button>
@@ -775,12 +793,14 @@ const PoojaKitDetail = () => {
                                         <div className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Total Price</div>
                                         <div className="text-4xl font-black text-maroon-dark">₹{getPrice() * quantity}</div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-sm font-bold text-spiritual-green flex items-center justify-end gap-1">
-                                            <Package className="w-4 h-4" /> Free Shipping
+                                    {kit.shipping.showShipping && (
+                                        <div className="text-right">
+                                            <div className="text-sm font-bold text-spiritual-green flex items-center justify-end gap-1">
+                                                <Package className="w-4 h-4" /> {kit.shipping.shippingLabel}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground font-medium">{kit.shipping.deliveryText}</div>
                                         </div>
-                                        <div className="text-xs text-muted-foreground font-medium">Delivery in 2-3 days</div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 <Button
