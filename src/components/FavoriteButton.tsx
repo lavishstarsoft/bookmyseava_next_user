@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { useFavorites, FavoriteItem } from '@/contexts/FavoritesContext';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FavoriteButtonProps {
     item: FavoriteItem;
@@ -11,6 +12,7 @@ interface FavoriteButtonProps {
 
 export const FavoriteButton: React.FC<FavoriteButtonProps> = ({ item, className = "", iconSize = 20 }) => {
     const { isFavorite, addFavorite, removeFavorite } = useFavorites();
+    const { requireAuth } = useAuth();
     const [isAnimating, setIsAnimating] = useState(false);
     const favorited = isFavorite(item.id);
 
@@ -18,21 +20,23 @@ export const FavoriteButton: React.FC<FavoriteButtonProps> = ({ item, className 
         e.preventDefault();
         e.stopPropagation();
 
-        if (favorited) {
-            removeFavorite(item.id);
-            toast({
-                title: "Removed from Favorites",
-                description: `${item.title} removed from your favorites list.`,
-            });
-        } else {
-            addFavorite(item);
-            setIsAnimating(true);
-            setTimeout(() => setIsAnimating(false), 300); // Reset animation state
-            toast({
-                title: "Added to Favorites \u2764\ufe0f",
-                description: `${item.title} added to your favorites list.`,
-            });
-        }
+        requireAuth(() => {
+            if (favorited) {
+                removeFavorite(item.id);
+                toast({
+                    title: "Removed from Favorites",
+                    description: `${item.title} removed from your favorites list.`,
+                });
+            } else {
+                addFavorite(item);
+                setIsAnimating(true);
+                setTimeout(() => setIsAnimating(false), 300); // Reset animation state
+                toast({
+                    title: "Added to Favorites ❤️",
+                    description: `${item.title} added to your favorites list.`,
+                });
+            }
+        });
     };
 
     return (
