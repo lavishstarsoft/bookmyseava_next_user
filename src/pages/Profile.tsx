@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import {
@@ -17,7 +17,14 @@ import {
     Shield,
     CreditCard,
     Trash2,
-    Plus
+    Plus,
+    Clock,
+    IndianRupee,
+    Truck,
+    CheckCircle2,
+    XCircle,
+    AlertCircle,
+    Loader2
 } from "lucide-react";
 import {
     Dialog,
@@ -36,6 +43,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import AddressFormModal, { type AddressData } from "@/components/AddressFormModal";
 import { API_URL } from "@/config";
 
 // --- Mock Data ---
@@ -61,26 +69,20 @@ interface Address {
     isDefault?: boolean;
 }
 
-const initialAddressForm = {
-    label: "Home",
-    name: "",
-    houseNo: "",
-    area: "",
-    landmark: "",
-    city: "",
-    state: "",
-    pincode: "",
-    phone: "",
-    isDefault: false
-};
-
-const INDIAN_STATES = [
-    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana",
-    "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
-    "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana",
-    "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
-    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
-];
+interface KitOrder {
+    _id: string;
+    orderId: string;
+    kit: { kitId: string; title: string; image: string; category: string };
+    plan: { id: string; label: string; price: number };
+    quantity: number;
+    totalAmount: number;
+    deliveryDate: string;
+    deliverySlot: { id: string; label: string };
+    deliveryAddress: { line1: string; city: string; state: string; pincode: string };
+    status: 'pending' | 'confirmed' | 'out_for_delivery' | 'delivered' | 'cancelled';
+    paymentStatus: 'pending' | 'paid' | 'failed';
+    createdAt: string;
+}
 
 const Profile = () => {
     const { toast } = useToast();
@@ -95,9 +97,12 @@ const Profile = () => {
     // Address State
     const [addresses, setAddresses] = useState<Address[]>([]);
 
+    // Orders State
+    const [orders, setOrders] = useState<KitOrder[]>([]);
+    const [ordersLoading, setOrdersLoading] = useState(false);
+
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-    const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
-    const [addressForm, setAddressForm] = useState<Address>(initialAddressForm as Address);
+    const [editingAddress, setEditingAddress] = useState<AddressData | null>(null);
 
     // Load addresses from local storage AND sync to backend
     useEffect(() => {
@@ -159,6 +164,31 @@ const Profile = () => {
             setFormData(user);
         }
     }, [user]);
+
+    // Fetch orders when bookings tab is active
+    useEffect(() => {
+        if (activeTab === 'bookings') {
+            const fetchOrders = async () => {
+                setOrdersLoading(true);
+                try {
+                    const token = localStorage.getItem('token');
+                    if (!token) return;
+                    const res = await fetch(`${API_URL}/v1/kit-orders/mine`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setOrders(Array.isArray(data) ? data : (data.orders || []));
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch orders:', err);
+                } finally {
+                    setOrdersLoading(false);
+                }
+            };
+            fetchOrders();
+        }
+    }, [activeTab]);
 
     const handleSaveProfile = () => {
         if (formData) {
@@ -253,21 +283,57 @@ const Profile = () => {
     };
 
     // Address Handlers
-    const handleAddressInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setAddressForm(prev => ({ ...prev, [name]: value }));
-    };
-
     const handleAddAddress = () => {
-        setAddressForm({ ...initialAddressForm, id: Math.random().toString(36).substr(2, 9) } as Address);
-        setEditingAddressId(null);
+        setEditingAddress(null);
         setIsAddressModalOpen(true);
     };
 
     const handleEditAddress = (address: Address) => {
-        setAddressForm(address);
-        setEditingAddressId(address.id);
+        setEditingAddress(address as AddressData);
         setIsAddressModalOpen(true);
+    };
+
+    const handleAddressSave = async (savedAddr: AddressData) => {
+        let newAddresses: Address[];
+        const addrAsAddress = savedAddr as unknown as Address;
+        if (editingAddress) {
+            newAddresses = addresses.map(addr => addr.id === savedAddr.id ? addrAsAddress : addr);
+        } else {
+            newAddresses = [...addresses, addrAsAddress];
+        }
+        setAddresses(newAddresses);
+        localStorage.setItem("addresses", JSON.stringify(newAddresses));
+        setIsAddressModalOpen(false);
+
+        // API Call to Update Backend
+        try {
+            const token = localStorage.getItem('token');
+            if (token) {
+                await fetch(`${API_URL}/v1/customer-auth/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        address: {
+                            name: savedAddr.name || '',
+                            phone: savedAddr.phone || '',
+                            street: savedAddr.houseNo + (savedAddr.area ? `, ${savedAddr.area}` : ''),
+                            city: savedAddr.city,
+                            state: savedAddr.state,
+                            zip: savedAddr.pincode,
+                            country: 'India'
+                        }
+                    })
+                });
+                toast({ title: "Success", description: "Address synced to your profile." });
+            }
+        } catch (err) {
+            console.error("Failed to sync address", err);
+        }
+
+        toast({ title: editingAddress ? "Address Updated" : "Address Added", description: editingAddress ? "Your address details have been updated." : "New address has been added to your book." });
     };
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -288,62 +354,6 @@ const Profile = () => {
             toast({ title: "Address Deleted", description: "Address has been removed from your book." });
             setIsDeleteModalOpen(false);
             setAddressToDeleteId(null);
-        }
-    };
-
-    const submitAddressForm = async () => {
-        if (!addressForm.name || !addressForm.houseNo || !addressForm.city || !addressForm.phone) {
-            toast({ variant: "destructive", title: "Missing Fields", description: "Please fill in all required fields." });
-            return;
-        }
-
-        // Optimistic UI Update first
-        let newAddresses = [];
-        if (editingAddressId) {
-            newAddresses = addresses.map(addr => addr.id === editingAddressId ? addressForm : addr);
-        } else {
-            newAddresses = [...addresses, addressForm];
-        }
-        setAddresses(newAddresses);
-        setIsAddressModalOpen(false);
-
-        // API Call to Update Backend
-        try {
-            const token = localStorage.getItem('token'); // Assuming token is stored here
-            if (token) {
-                // We send the 'primary' or default address to backend profile
-                // For now, we just send the one currently being added/edited as the profile address
-                // Ideally, we might want to sync the whole list, but for Superadmin "derived address", sending the active one is good.
-
-                await fetch(`${API_URL}/v1/customer-auth/profile`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        address: {
-                            name: addressForm.name || '',
-                            phone: addressForm.phone || '',
-                            street: addressForm.houseNo + (addressForm.area ? `, ${addressForm.area}` : ''),
-                            city: addressForm.city,
-                            state: addressForm.state,
-                            zip: addressForm.pincode,
-                            country: 'India'
-                        }
-                    })
-                });
-                toast({ title: "Success", description: "Address synced to your profile." });
-            }
-        } catch (err) {
-            console.error("Failed to sync address", err);
-            // We don't revert UI because localStorage is still valid, just sync failed
-        }
-
-        if (editingAddressId) {
-            toast({ title: "Address Updated", description: "Your address details have been updated." });
-        } else {
-            toast({ title: "Address Added", description: "New address has been added to your book." });
         }
     };
 
@@ -535,20 +545,140 @@ const Profile = () => {
                         {/* --- MY BOOKINGS TAB --- */}
                         {activeTab === "bookings" && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <Card className="border-border/50 shadow-sm border-dashed">
-                                    <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                                        <div className="h-16 w-16 bg-maroon/10 rounded-full flex items-center justify-center mb-4">
-                                            <Calendar className="h-8 w-8 text-maroon" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-slate-900">No Bookings Yet</h3>
-                                        <p className="text-muted-foreground max-w-sm mt-2 mb-6">
-                                            You haven't booked any poojas yet. Start your spiritual journey today.
-                                        </p>
-                                        <Button className="bg-maroon hover:bg-maroon-dark">
-                                            Book a Pooja Now
-                                        </Button>
-                                    </CardContent>
-                                </Card>
+                                <div className="flex justify-between items-center">
+                                    <h2 className="text-xl font-bold">My Bookings</h2>
+                                    <Badge variant="secondary" className="bg-maroon/10 text-maroon">
+                                        {orders.length} {orders.length === 1 ? 'Order' : 'Orders'}
+                                    </Badge>
+                                </div>
+
+                                {ordersLoading ? (
+                                    <div className="flex flex-col items-center justify-center py-16">
+                                        <Loader2 className="h-8 w-8 animate-spin text-maroon mb-3" />
+                                        <p className="text-muted-foreground">Loading your bookings...</p>
+                                    </div>
+                                ) : orders.length === 0 ? (
+                                    <Card className="border-border/50 shadow-sm border-dashed">
+                                        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                                            <div className="h-16 w-16 bg-maroon/10 rounded-full flex items-center justify-center mb-4">
+                                                <Calendar className="h-8 w-8 text-maroon" />
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-slate-900">No Bookings Yet</h3>
+                                            <p className="text-muted-foreground max-w-sm mt-2 mb-6">
+                                                You haven't booked any poojas yet. Start your spiritual journey today.
+                                            </p>
+                                            <Button className="bg-maroon hover:bg-maroon-dark" onClick={() => window.location.href = '/'}>
+                                                Book a Pooja Now
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {orders.map((order) => {
+                                            const statusConfig: Record<string, { color: string; bg: string; icon: React.ReactNode; label: string }> = {
+                                                pending: { color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: <AlertCircle className="h-3.5 w-3.5" />, label: 'Pending' },
+                                                confirmed: { color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200', icon: <CheckCircle2 className="h-3.5 w-3.5" />, label: 'Confirmed' },
+                                                out_for_delivery: { color: 'text-purple-700', bg: 'bg-purple-50 border-purple-200', icon: <Truck className="h-3.5 w-3.5" />, label: 'Out for Delivery' },
+                                                delivered: { color: 'text-green-700', bg: 'bg-green-50 border-green-200', icon: <CheckCircle2 className="h-3.5 w-3.5" />, label: 'Delivered' },
+                                                cancelled: { color: 'text-red-700', bg: 'bg-red-50 border-red-200', icon: <XCircle className="h-3.5 w-3.5" />, label: 'Cancelled' },
+                                            };
+                                            const paymentConfig: Record<string, { color: string; label: string }> = {
+                                                pending: { color: 'text-amber-600', label: 'Payment Pending' },
+                                                paid: { color: 'text-green-600', label: 'Paid' },
+                                                failed: { color: 'text-red-600', label: 'Payment Failed' },
+                                            };
+                                            const sc = statusConfig[order.status] || statusConfig.pending;
+                                            const pc = paymentConfig[order.paymentStatus] || paymentConfig.pending;
+                                            const deliveryDate = order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                                            const orderDate = order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+                                            return (
+                                                <Card key={order._id} className="border-border/50 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer" onClick={() => { if (order.kit?.kitId) window.location.href = `/pooja-kit/${order.kit.kitId}`; }}>
+                                                    {/* Order Header */}
+                                                    <div className="bg-slate-50 border-b border-border/50 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-xs font-mono font-semibold text-slate-500">{order.orderId}</span>
+                                                            <span className="text-xs text-muted-foreground">Ordered on {orderDate}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="outline" className={`${sc.bg} ${sc.color} border gap-1 text-xs font-medium`}>
+                                                                {sc.icon} {sc.label}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+
+                                                    <CardContent className="p-4">
+                                                        <div className="flex gap-4">
+                                                            {/* Kit Image */}
+                                                            <div className="flex-shrink-0">
+                                                                <div className="h-20 w-20 rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
+                                                                    {order.kit?.image ? (
+                                                                        <img src={order.kit.image} alt={order.kit.title} className="h-full w-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="h-full w-full flex items-center justify-center">
+                                                                            <Package className="h-8 w-8 text-slate-300" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Order Details */}
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="font-semibold text-slate-900 truncate">{order.kit?.title || 'Pooja Kit'}</h3>
+                                                                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-sm text-slate-600">
+                                                                    {order.plan?.label && (
+                                                                        <span className="flex items-center gap-1">
+                                                                            <Package className="h-3.5 w-3.5 text-slate-400" />
+                                                                            {order.plan.label}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="flex items-center gap-1">
+                                                                        Qty: {order.quantity}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Delivery Info */}
+                                                                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
+                                                                    {deliveryDate && (
+                                                                        <span className="flex items-center gap-1 text-slate-600">
+                                                                            <Calendar className="h-3.5 w-3.5 text-maroon/60" />
+                                                                            {deliveryDate}
+                                                                        </span>
+                                                                    )}
+                                                                    {order.deliverySlot?.label && (
+                                                                        <span className="flex items-center gap-1 text-slate-600">
+                                                                            <Clock className="h-3.5 w-3.5 text-maroon/60" />
+                                                                            {order.deliverySlot.label}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Address */}
+                                                                {order.deliveryAddress && (
+                                                                    <div className="flex items-start gap-1 mt-2 text-xs text-slate-500">
+                                                                        <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                                                        <span>
+                                                                            {order.deliveryAddress.line1}, {order.deliveryAddress.city}, {order.deliveryAddress.state} - {order.deliveryAddress.pincode}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Price & Payment */}
+                                                            <div className="flex-shrink-0 text-right">
+                                                                <div className="flex items-center justify-end gap-0.5 text-lg font-bold text-slate-900">
+                                                                    <IndianRupee className="h-4 w-4" />
+                                                                    {order.totalAmount?.toLocaleString('en-IN')}
+                                                                </div>
+                                                                <span className={`text-xs font-medium ${pc.color}`}>{pc.label}</span>
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -625,147 +755,13 @@ const Profile = () => {
                                     )}
                                 </div>
 
-                                {/* Address Modal */}
-                                <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
-                                    <DialogContent className="sm:max-w-[500px] bg-[#FFF9F0] border-[#8D0303]/20 shadow-xl p-0 gap-0">
-
-                                        {/* Header */}
-                                        <div className="p-6 pb-0 bg-[#FFF9F0]">
-                                            <DialogHeader>
-                                                <DialogTitle className="text-2xl text-[#8D0303] font-bold font-serif">{editingAddressId ? 'Edit Address' : 'Add New Address'}</DialogTitle>
-                                                <DialogDescription className="text-base text-[#8D0303]/80 pt-1">
-                                                    Enter your delivery details below.
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                        </div>
-
-                                        <div className="overflow-y-auto max-h-[60vh] px-6 pb-6 pt-4 space-y-6 flex-1 bg-[#FFF9F0]">
-                                            <div className="bg-white p-5 rounded-lg border border-[#8D0303]/10 shadow-sm grid gap-4">
-
-                                                {/* Full Name */}
-                                                <div>
-                                                    <Label htmlFor="name" className="text-xs font-semibold text-[#8D0303]/70 uppercase mb-1.5 block">Full name (First and Last name)</Label>
-                                                    <Input
-                                                        id="name"
-                                                        name="name"
-                                                        value={addressForm.name}
-                                                        onChange={handleAddressInputChange}
-                                                        className="bg-[#FFF9F0] border-[#8D0303]/20 focus-visible:ring-[#8D0303] focus-visible:ring-offset-0 focus-visible:border-[#8D0303] h-9"
-                                                    />
-                                                </div>
-
-                                                {/* Mobile Number */}
-                                                <div>
-                                                    <Label htmlFor="phone" className="text-xs font-semibold text-[#8D0303]/70 uppercase mb-1.5 block">Mobile number</Label>
-                                                    <Input
-                                                        id="phone"
-                                                        name="phone"
-                                                        value={addressForm.phone}
-                                                        onChange={handleAddressInputChange}
-                                                        className="bg-[#FFF9F0] border-[#8D0303]/20 focus-visible:ring-[#8D0303] focus-visible:ring-offset-0 focus-visible:border-[#8D0303] h-9"
-                                                    />
-                                                    <p className="text-[10px] text-muted-foreground mt-1">May be used to assist delivery</p>
-                                                </div>
-
-                                                {/* Pincode */}
-                                                <div>
-                                                    <Label htmlFor="pincode" className="text-xs font-semibold text-[#8D0303]/70 uppercase mb-1.5 block">Pincode</Label>
-                                                    <Input
-                                                        id="pincode"
-                                                        name="pincode"
-                                                        value={addressForm.pincode}
-                                                        onChange={handleAddressInputChange}
-                                                        placeholder="6 digits [0-9] PIN code"
-                                                        className="bg-[#FFF9F0] border-[#8D0303]/20 focus-visible:ring-[#8D0303] focus-visible:ring-offset-0 focus-visible:border-[#8D0303] h-9"
-                                                    />
-                                                </div>
-
-                                                {/* House No */}
-                                                <div>
-                                                    <Label htmlFor="houseNo" className="text-xs font-semibold text-[#8D0303]/70 uppercase mb-1.5 block">Flat, House no., Building, Company, Apartment</Label>
-                                                    <Input
-                                                        id="houseNo"
-                                                        name="houseNo"
-                                                        value={addressForm.houseNo}
-                                                        onChange={handleAddressInputChange}
-                                                        className="bg-[#FFF9F0] border-[#8D0303]/20 focus-visible:ring-[#8D0303] focus-visible:ring-offset-0 focus-visible:border-[#8D0303] h-9"
-                                                    />
-                                                </div>
-
-                                                {/* Area */}
-                                                <div>
-                                                    <Label htmlFor="area" className="text-xs font-semibold text-[#8D0303]/70 uppercase mb-1.5 block">Area, Street, Sector, Village</Label>
-                                                    <Input
-                                                        id="area"
-                                                        name="area"
-                                                        value={addressForm.area}
-                                                        onChange={handleAddressInputChange}
-                                                        className="bg-[#FFF9F0] border-[#8D0303]/20 focus-visible:ring-[#8D0303] focus-visible:ring-offset-0 focus-visible:border-[#8D0303] h-9"
-                                                    />
-                                                </div>
-
-                                                {/* Landmark */}
-                                                <div>
-                                                    <Label htmlFor="landmark" className="text-xs font-semibold text-[#8D0303]/70 uppercase mb-1.5 block">Landmark</Label>
-                                                    <Input
-                                                        id="landmark"
-                                                        name="landmark"
-                                                        value={addressForm.landmark || ''}
-                                                        onChange={handleAddressInputChange}
-                                                        placeholder="E.g. near apollo hospital"
-                                                        className="bg-[#FFF9F0] border-[#8D0303]/20 focus-visible:ring-[#8D0303] focus-visible:ring-offset-0 focus-visible:border-[#8D0303] h-9"
-                                                    />
-                                                </div>
-
-                                                {/* City and State */}
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <Label htmlFor="city" className="text-xs font-semibold text-[#8D0303]/70 uppercase mb-1.5 block">Town/City</Label>
-                                                        <Input
-                                                            id="city"
-                                                            name="city"
-                                                            value={addressForm.city}
-                                                            onChange={handleAddressInputChange}
-                                                            className="bg-[#FFF9F0] border-[#8D0303]/20 focus-visible:ring-[#8D0303] focus-visible:ring-offset-0 focus-visible:border-[#8D0303] h-9"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <Label htmlFor="state" className="text-xs font-semibold text-[#8D0303]/70 uppercase mb-1.5 block">State</Label>
-                                                        <select
-                                                            id="state"
-                                                            name="state"
-                                                            value={addressForm.state}
-                                                            onChange={handleAddressInputChange}
-                                                            className="flex h-9 w-full rounded-md border border-[#8D0303]/20 bg-[#FFF9F0] px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8D0303] focus-visible:ring-offset-0 focus:border-[#8D0303] disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
-                                                        >
-                                                            <option value="" disabled>Choose a state</option>
-                                                            {INDIAN_STATES.map((state) => (
-                                                                <option key={state} value={state}>{state}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                </div>
-
-                                            </div>
-                                        </div>
-
-                                        <div className="p-4 border-t border-[#8D0303]/10 bg-[#FFF9F0] flex justify-end gap-3 sticky bottom-0 backdrop-blur-sm rounded-b-lg">
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => setIsAddressModalOpen(false)}
-                                                className="text-[#8D0303] border-[#8D0303]/30 hover:bg-[#8D0303]/10 bg-transparent"
-                                            >
-                                                Cancel
-                                            </Button>
-                                            <Button
-                                                onClick={submitAddressForm}
-                                                className="bg-[#8D0303] hover:bg-[#720202] text-white shadow-md shadow-red-900/10"
-                                            >
-                                                Save Address
-                                            </Button>
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
+                                {/* Address Modal - Shared Component */}
+                                <AddressFormModal
+                                    open={isAddressModalOpen}
+                                    onOpenChange={setIsAddressModalOpen}
+                                    onSave={handleAddressSave}
+                                    editAddress={editingAddress}
+                                />
                                 {/* Delete Confirmation Modal */}
                                 <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
                                     <DialogContent className="sm:max-w-[400px] bg-[#FFF9F0] border-[#8D0303]/20 shadow-xl p-0 gap-0">

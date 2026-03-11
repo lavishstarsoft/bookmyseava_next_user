@@ -129,8 +129,10 @@ const toDisplayKit = (kit: BackendKit): KitDisplay => {
         },
         shipping: {
             freeShipping: kit.shipping?.freeShipping ?? true,
-            shippingLabel: kit.shipping?.shippingLabel || 'Free Shipping',
-            deliveryText: kit.shipping?.deliveryText || 'Delivery in 2-3 days',
+            shippingLabel: kit.shipping?.shippingLabel
+                ? kit.shipping.shippingLabel
+                : (kit.shipping?.freeShipping !== false ? 'Free Shipping' : ''),
+            deliveryText: kit.shipping?.deliveryText ?? 'Delivery in 2-3 days',
             showShipping: kit.shipping?.showShipping ?? true,
         },
     };
@@ -793,12 +795,16 @@ const PoojaKitDetail = () => {
                                         <div className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Total Price</div>
                                         <div className="text-4xl font-black text-maroon-dark">₹{getPrice() * quantity}</div>
                                     </div>
-                                    {kit.shipping.showShipping && (
+                                    {kit.shipping.showShipping && (kit.shipping.shippingLabel || kit.shipping.deliveryText) && (
                                         <div className="text-right">
-                                            <div className="text-sm font-bold text-spiritual-green flex items-center justify-end gap-1">
-                                                <Package className="w-4 h-4" /> {kit.shipping.shippingLabel}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground font-medium">{kit.shipping.deliveryText}</div>
+                                            {kit.shipping.shippingLabel && (
+                                                <div className="text-sm font-bold text-spiritual-green flex items-center justify-end gap-1">
+                                                    <Package className="w-4 h-4" /> {kit.shipping.shippingLabel}
+                                                </div>
+                                            )}
+                                            {kit.shipping.deliveryText && (
+                                                <div className="text-xs text-muted-foreground font-medium">{kit.shipping.deliveryText}</div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
     ArrowLeft, CheckCircle2, ChevronRight, MapPin,
     Calendar as CalendarIcon, Clock, CreditCard, ShieldCheck,
-    Star, Sparkles, Receipt, Home
+    Star, Sparkles, Receipt, Home, Plus, Phone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -12,8 +12,11 @@ import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import AddressFormModal, { type AddressData } from "@/components/AddressFormModal";
 import axios from "axios";
 import { API_URL } from "@/config";
+
+type SavedAddress = AddressData;
 
 // We don't need mock data for pooja details here anymore, we will primarily rely on location.state
 
@@ -86,14 +89,76 @@ const Checkout = () => {
     const [timeSlot, setTimeSlot] = useState(initialTimeSlot);
     const [paymentMode, setPaymentMode] = useState<'advance' | 'full'>('full');
     const [couponCode, setCouponCode] = useState("");
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [couponApplied, setCouponApplied] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponError, setCouponError] = useState("");
+    const [couponSuccess, setCouponSuccess] = useState("");
     const [useCoins, setUseCoins] = useState(false);
 
     const { isAuthenticated, openAuthModal, token } = useAuth();
-    const [selectedAddress, setSelectedAddress] = useState(1);
+    const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+    const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 
-    // Redirect if not logged in
+    // Load saved addresses from localStorage
     useEffect(() => {
-        if (!isAuthenticated) {
+        const saved = localStorage.getItem('addresses');
+        if (saved) {
+            const parsed: SavedAddress[] = JSON.parse(saved);
+            setSavedAddresses(parsed);
+            const defaultAddr = parsed.find(a => a.isDefault) || parsed[0];
+            if (defaultAddr) setSelectedAddressId(defaultAddr.id);
+        }
+    }, []);
+
+    // Kit delivery config fetched from backend
+    const [kitDeliveryConfig, setKitDeliveryConfig] = useState<{
+        timeSlots: { id: string; label: string; active: boolean }[];
+        bookingStartDate?: string;
+        bookingEndDate?: string;
+        leadDays: number;
+        maxAdvanceDays: number;
+    } | null>(null);
+
+    // Fetch kit deliveryConfig when type is 'kit'
+    useEffect(() => {
+        if (type === 'kit' && slug) {
+            axios.get(`${API_URL.replace('/api', '/api/v1')}/kits/${slug}`)
+                .then(res => {
+                    const config = res.data?.deliveryConfig;
+                    if (config) {
+                        setKitDeliveryConfig({
+                            timeSlots: config.timeSlots || [],
+                            bookingStartDate: config.bookingStartDate,
+                            bookingEndDate: config.bookingEndDate,
+                            leadDays: config.leadDays ?? 0,
+                            maxAdvanceDays: config.maxAdvanceDays ?? 30,
+                        });
+                        // Set first active slot as selected
+                        const activeSlots = (config.timeSlots || []).filter((s: { active: boolean }) => s.active);
+                        if (activeSlots.length > 0) setTimeSlot(activeSlots[0]);
+                        // Set initial date based on leadDays + bookingStartDate
+                        const today = new Date(new Date().setHours(0, 0, 0, 0));
+                        const leadDays = config.leadDays ?? 0;
+                        const minDate = new Date(today);
+                        minDate.setDate(minDate.getDate() + leadDays);
+                        if (config.bookingStartDate) {
+                            const bsd = new Date(config.bookingStartDate);
+                            bsd.setHours(0, 0, 0, 0);
+                            if (bsd > minDate) { setDate(bsd); return; }
+                        }
+                        setDate(minDate);
+                    }
+                })
+                .catch(() => { /* use defaults on failure */ });
+        }
+    }, [type, slug]);
+
+    // Redirect if not logged in (check localStorage too — token loads async on refresh)
+    useEffect(() => {
+        const storedToken = localStorage.getItem('token');
+        if (!isAuthenticated && !storedToken) {
             openAuthModal();
             navigate(-1);
         }
@@ -111,10 +176,15 @@ const Checkout = () => {
         return acc + itemBasePrice + addonPrice;
     }, 0);
 
-    const grandTotal = subTotal + serviceFee - coinsDiscount;
+    const grandTotal = subTotal + serviceFee - coinsDiscount - couponDiscount;
     const advanceAmount = Math.ceil(grandTotal * 0.2); // 20% advance
 
     const amountToPay = paymentMode === 'full' ? grandTotal : advanceAmount;
+
+    // Dynamic delivery slots: use kit's active slots if available, else fallback to defaults
+    const activeDeliverySlots = !hasPooja && kitDeliveryConfig?.timeSlots?.length
+        ? kitDeliveryConfig.timeSlots.filter(s => s.active)
+        : DELIVERY_TIME_SLOTS;
 
     // Steps Configuration dynamically based on cart contents
     const STEPS = [
@@ -132,6 +202,55 @@ const Checkout = () => {
         }
     };
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setCouponLoading(true);
+        setCouponError("");
+        setCouponSuccess("");
+        try {
+            const authToken = token || localStorage.getItem('token');
+            const res = await axios.post(
+                `${API_URL.replace('/api', '/api/v1')}/coupons/validate`,
+                {
+                    code: couponCode.trim(),
+                    orderValue: subTotal + serviceFee,
+                    category: orderItems[0]?.type === 'kit' || orderItems[0]?.type === 'pooja-kit'
+                        ? (orderItems[0] as any).category || ''
+                        : ''
+                },
+                { headers: { Authorization: `Bearer ${authToken}` } }
+            );
+            const data = res.data;
+            if (data.valid) {
+                setCouponDiscount(data.discount);
+                setCouponApplied(data.coupon);
+                setCouponSuccess(data.message);
+                setCouponError("");
+            } else {
+                setCouponDiscount(0);
+                setCouponApplied(null);
+                setCouponError(data.message);
+                setCouponSuccess("");
+            }
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || "Failed to validate coupon";
+            setCouponError(msg);
+            setCouponDiscount(0);
+            setCouponApplied(null);
+            setCouponSuccess("");
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setCouponCode("");
+        setCouponDiscount(0);
+        setCouponApplied(null);
+        setCouponError("");
+        setCouponSuccess("");
+    };
 
     const handlePayment = async () => {
         const isKitOnly = orderItems.every(item => item.type === 'pooja-kit' || item.type === 'kit');
@@ -157,9 +276,19 @@ const Checkout = () => {
                             : { id: 'one_time', label: (kitItem as any).planLabel || 'One-Time Purchase', price: kitItem.price },
                         quantity: kitItem.quantity,
                         totalAmount: grandTotal,
+                        coupon: couponApplied ? { code: couponApplied.code, discountType: couponApplied.discountType, discountValue: couponApplied.discountValue, discountAmount: couponDiscount } : undefined,
                         deliveryDate: date ? date.toISOString() : undefined,
                         deliverySlot: timeSlot.label,
-                        deliveryAddress: { line1: '12-4, Temple Road, Kukatpally', city: 'Hyderabad', state: 'Telangana', pincode: '500072' }
+                        deliveryAddress: (() => {
+                            const addr = savedAddresses.find(a => a.id === selectedAddressId);
+                            if (!addr) return {};
+                            return {
+                                line1: addr.houseNo + (addr.area ? `, ${addr.area}` : '') + (addr.landmark ? `, ${addr.landmark}` : ''),
+                                city: addr.city,
+                                state: addr.state,
+                                pincode: addr.pincode
+                            };
+                        })()
                     },
                     { headers: { Authorization: `Bearer ${authToken}` } }
                 );
@@ -245,7 +374,29 @@ const Checkout = () => {
                                                 selected={date}
                                                 onSelect={setDate}
                                                 className="rounded-md"
-                                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                                disabled={(date) => {
+                                                    const today = new Date(new Date().setHours(0, 0, 0, 0));
+                                                    if (date < today) return true;
+                                                    if (!hasPooja && kitDeliveryConfig) {
+                                                        const minDate = new Date(today);
+                                                        minDate.setDate(minDate.getDate() + kitDeliveryConfig.leadDays);
+                                                        if (date < minDate) return true;
+                                                        const maxDate = new Date(today);
+                                                        maxDate.setDate(maxDate.getDate() + kitDeliveryConfig.maxAdvanceDays);
+                                                        if (date > maxDate) return true;
+                                                        if (kitDeliveryConfig.bookingStartDate) {
+                                                            const bsd = new Date(kitDeliveryConfig.bookingStartDate);
+                                                            bsd.setHours(0, 0, 0, 0);
+                                                            if (date < bsd) return true;
+                                                        }
+                                                        if (kitDeliveryConfig.bookingEndDate) {
+                                                            const bed = new Date(kitDeliveryConfig.bookingEndDate);
+                                                            bed.setHours(23, 59, 59, 999);
+                                                            if (date > bed) return true;
+                                                        }
+                                                    }
+                                                    return false;
+                                                }}
                                             />
                                         </div>
                                     </div>
@@ -256,7 +407,7 @@ const Checkout = () => {
                                             <Clock className="w-4 h-4 mr-1.5" /> {hasPooja ? 'Select Time Slot' : 'Delivery Time Slot'}
                                         </h4>
                                         <div className="flex flex-col gap-3">
-                                            {(hasPooja ? TIME_SLOTS : DELIVERY_TIME_SLOTS).map(slot => (
+                                            {(hasPooja ? TIME_SLOTS : activeDeliverySlots).map(slot => (
                                                 <button
                                                     key={slot.id}
                                                     onClick={() => setTimeSlot(slot)}
@@ -301,34 +452,62 @@ const Checkout = () => {
                                         <Button className="bg-maroon hover:bg-maroon-dark text-white">Login / Sign Up</Button>
                                     </div>
                                 ) : (
+                                    <>
                                     <div className="space-y-6">
                                         <div>
                                             <h4 className="font-semibold text-sm mb-3">Select Performing Address</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {/* Mock Address 1 */}
-                                                <label
-                                                    className={`p-4 rounded-lg border cursor-pointer relative ${selectedAddress === 1 ? 'border-marigold bg-marigold/5' : 'border-border hover:bg-muted/20'}`}
-                                                    onClick={() => setSelectedAddress(1)}
-                                                >
-                                                    {selectedAddress === 1 && <CheckCircle2 className="absolute top-4 right-4 w-5 h-5 text-marigold" />}
-                                                    <div className="flex items-center gap-2 font-bold mb-1"><Home className="w-4 h-4" /> Home</div>
-                                                    <p className="text-sm text-muted-foreground">12-4, Temple Road, Kukatpally, Hyderabad, Telangana 500072</p>
-                                                    <p className="text-sm font-medium mt-2">+91 98765 43210</p>
-                                                </label>
+                                                {savedAddresses.map((addr) => (
+                                                    <label
+                                                        key={addr.id}
+                                                        className={`p-4 rounded-lg border cursor-pointer relative transition-all ${selectedAddressId === addr.id ? 'border-marigold bg-marigold/5' : 'border-border hover:bg-muted/20'}`}
+                                                        onClick={() => setSelectedAddressId(addr.id)}
+                                                    >
+                                                        {selectedAddressId === addr.id && <CheckCircle2 className="absolute top-4 right-4 w-5 h-5 text-marigold" />}
+                                                        <div className="flex items-center gap-2 font-bold mb-1"><Home className="w-4 h-4" /> {addr.name}</div>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {addr.houseNo}{addr.area ? `, ${addr.area}` : ''}{addr.landmark ? `, ${addr.landmark}` : ''}, {addr.city}, {addr.state} {addr.pincode}
+                                                        </p>
+                                                        <p className="text-sm font-medium mt-2 flex items-center gap-1"><Phone className="w-3 h-3" /> {addr.phone}</p>
+                                                    </label>
+                                                ))}
 
-                                                {/* Add New Info */}
-                                                <button className="p-4 rounded-lg border border-dashed border-muted-foreground/40 hover:border-maroon hover:bg-maroon/5 flex flex-col items-center justify-center text-muted-foreground hover:text-maroon transition-colors min-h-[120px]">
-                                                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mb-2">+</div>
+                                                {/* Add New Address */}
+                                                <button
+                                                    onClick={() => setIsAddressModalOpen(true)}
+                                                    className="p-4 rounded-lg border border-dashed border-muted-foreground/40 hover:border-maroon hover:bg-maroon/5 flex flex-col items-center justify-center text-muted-foreground hover:text-maroon transition-colors min-h-[120px]"
+                                                >
+                                                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mb-2">
+                                                        <Plus className="w-4 h-4" />
+                                                    </div>
                                                     <span className="font-semibold">Add New Address</span>
                                                 </button>
                                             </div>
+
+                                            {savedAddresses.length === 0 && (
+                                                <p className="text-xs text-amber-600 mt-2 font-medium">Please add an address to continue.</p>
+                                            )}
                                         </div>
                                     </div>
+
+                                    {/* Add Address Modal - Shared Component */}
+                                    <AddressFormModal
+                                        open={isAddressModalOpen}
+                                        onOpenChange={setIsAddressModalOpen}
+                                        onSave={(savedAddr) => {
+                                            const updated = [...savedAddresses, savedAddr];
+                                            setSavedAddresses(updated);
+                                            setSelectedAddressId(savedAddr.id);
+                                            localStorage.setItem('addresses', JSON.stringify(updated));
+                                            setIsAddressModalOpen(false);
+                                        }}
+                                    />
+                                    </>
                                 )}
 
                                 <div className="mt-8 flex justify-between">
                                     <Button variant="outline" onClick={prevStep}>Back</Button>
-                                    <Button onClick={nextStep} className="bg-spiritual-green hover:bg-spiritual-green/90 text-white px-8" disabled={!isAuthenticated}>
+                                    <Button onClick={nextStep} className="bg-spiritual-green hover:bg-spiritual-green/90 text-white px-8" disabled={!isAuthenticated || !selectedAddressId}>
                                         Continue to Payment <ChevronRight className="w-4 h-4 ml-2" />
                                     </Button>
                                 </div>
@@ -486,6 +665,12 @@ const Checkout = () => {
                                             <span>-₹{coinsDiscount}</span>
                                         </div>
                                     )}
+                                    {couponDiscount > 0 && (
+                                        <div className="flex justify-between text-green-600 font-medium">
+                                            <span>Coupon ({couponApplied?.code})</span>
+                                            <span>-₹{couponDiscount}</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Promo/Coins Section */}
@@ -505,16 +690,50 @@ const Checkout = () => {
                                     </label>
 
                                     {/* Coupon */}
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Coupon Code"
-                                            value={couponCode}
-                                            onChange={(e) => setCouponCode(e.target.value)}
-                                            className="w-full text-sm border rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-spiritual-green uppercase"
-                                        />
-                                        <Button size="sm" variant="secondary" className="text-xs bg-gray-200">Apply</Button>
-                                    </div>
+                                    {couponApplied ? (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                                                <div className="flex items-center gap-2">
+                                                    <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                                                    <div>
+                                                        <span className="text-sm font-bold text-green-700 uppercase">{couponApplied.code}</span>
+                                                        <p className="text-[11px] text-green-600 font-medium">You save ₹{couponDiscount}!</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={handleRemoveCoupon}
+                                                    className="text-xs text-red-500 hover:text-red-700 font-semibold hover:underline"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Enter Coupon Code"
+                                                    value={couponCode}
+                                                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                    className="w-full text-sm border rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-spiritual-green uppercase font-mono tracking-wider"
+                                                    disabled={couponLoading}
+                                                />
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    className="text-xs bg-gray-200 shrink-0"
+                                                    onClick={handleApplyCoupon}
+                                                    disabled={couponLoading || !couponCode.trim()}
+                                                >
+                                                    {couponLoading ? 'Checking...' : 'Apply'}
+                                                </Button>
+                                            </div>
+                                            {couponError && (
+                                                <p className="text-xs text-red-600 font-medium">{couponError}</p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <Separator className="my-4" />
