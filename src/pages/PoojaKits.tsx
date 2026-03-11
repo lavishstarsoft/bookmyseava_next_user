@@ -33,14 +33,16 @@ const alphabets = ["All", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")];
 
 // Helper to get display price from a kit
 const getKitPrice = (kit: Kit): number => {
-    if (kit.category === 'daily' && kit.pricingPlans?.length) {
+    // Use offer/market price first (most common for non-subscription kits)
+    if (kit.offerPrice && Number(kit.offerPrice) > 0) return Number(kit.offerPrice);
+    if (kit.marketPrice && Number(kit.marketPrice) > 0) return Number(kit.marketPrice);
+    // Fallback to lowest active pricing plan
+    if (kit.pricingPlans?.length) {
         const activePlans = kit.pricingPlans.filter(p => p.active && Number(p.price) > 0);
         if (activePlans.length > 0) {
             return Math.min(...activePlans.map(p => Number(p.price)));
         }
     }
-    if (kit.offerPrice && Number(kit.offerPrice) > 0) return Number(kit.offerPrice);
-    if (kit.marketPrice && Number(kit.marketPrice) > 0) return Number(kit.marketPrice);
     return 0;
 };
 

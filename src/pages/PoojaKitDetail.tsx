@@ -79,13 +79,18 @@ const toDisplayKit = (kit: BackendKit): KitDisplay => {
     // Build pricing from pricingPlans or market/offer price
     const pricing: Record<string, number> = {};
 
-    if (kit.category === 'daily' && kit.pricingPlans?.length) {
+    if (kit.pricingPlans?.length) {
         kit.pricingPlans.forEach(p => {
-            pricing[p.id] = Number(p.price) || 0;
+            if (p.active) {
+                pricing[p.id] = Number(p.price) || 0;
+            }
         });
-    } else {
-        const price = Number(kit.offerPrice) || Number(kit.marketPrice) || 0;
-        pricing.one_time = price;
+    }
+
+    // Always add one_time price from offer/market price
+    const oneTimePrice = Number(kit.offerPrice) || Number(kit.marketPrice) || 0;
+    if (oneTimePrice > 0) {
+        pricing.one_time = oneTimePrice;
     }
 
     return {
@@ -179,11 +184,14 @@ const PoojaKitDetail = () => {
         }
     }, [slug]);
 
-    // Set default selected plan for non-daily kits
+    // Set default selected plan if current selection is invalid
     useEffect(() => {
-        if (kit && !kit.pricingPlans?.find(p => p.id === selectedPlan)) {
-            if (kit.category !== 'daily') {
-                setSelectedPlan('one_time');
+        if (kit && selectedPlan) {
+            const planExists = kit.pricingPlans?.find(p => p.id === selectedPlan && p.active);
+            const isOneTime = selectedPlan === 'one_time' && kit.pricing.one_time > 0;
+            if (!planExists && !isOneTime) {
+                const firstActivePlan = kit.pricingPlans?.find(p => p.active);
+                setSelectedPlan(firstActivePlan?.id || 'one_time');
             }
         }
     }, [kit, selectedPlan]);
@@ -231,7 +239,7 @@ const PoojaKitDetail = () => {
     const getPlanLabel = () => {
         if (!kit) return '';
         const plan = kit.pricingPlans?.find(p => p.id === selectedPlan);
-        return plan?.label || (kit.category === 'daily' ? '' : 'One-Time Purchase');
+        return plan?.label || 'One-Time Purchase';
     };
 
     const handleAddToCart = () => {
@@ -269,10 +277,25 @@ const PoojaKitDetail = () => {
         });
     };
 
-    // Determine display subscription options based on category
-    const displaySubscriptionOptions = kit.category === 'daily'
-        ? (kit.pricingPlans?.filter(p => p.active) || [])
-        : [{ id: 'one_time', label: 'One-Time Purchase', badge: '' }];
+    // Determine display subscription options — show all active plans + one-time
+    const displaySubscriptionOptions: { id: string; label: string; badge: string }[] = [];
+
+    // Add subscription plans if they exist
+    if (kit.pricingPlans && kit.pricingPlans.length > 0) {
+        kit.pricingPlans
+            .filter(p => p.active)
+            .forEach(p => displaySubscriptionOptions.push({ id: p.id, label: p.label, badge: p.badge || '' }));
+    }
+
+    // Add one-time purchase option if market/offer price exists
+    if (kit.pricing.one_time > 0) {
+        displaySubscriptionOptions.push({ id: 'one_time', label: 'One-Time Purchase', badge: '' });
+    }
+
+    // Fallback: if nothing, show one-time
+    if (displaySubscriptionOptions.length === 0) {
+        displaySubscriptionOptions.push({ id: 'one_time', label: 'One-Time Purchase', badge: '' });
+    }
 
     const renderAccordions = () => (
         <>
@@ -350,8 +373,8 @@ const PoojaKitDetail = () => {
                 )}
             </div>
 
-            {/* Savings Table Upsell — only show for daily kits with subscription plans */}
-            {kit.category === 'daily' && kit.pricing.weekly > 0 && (
+            {/* Savings Table Upsell — show for kits with subscription plans */}
+            {kit.pricingPlans && kit.pricingPlans.filter(p => p.active).length > 0 && (
                 <div className="bg-white rounded-2xl border border-border shadow-sm mb-4 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-marigold/10 rounded-bl-full -z-0 pointer-events-none" />
                     <button
@@ -372,51 +395,36 @@ const PoojaKitDetail = () => {
                                         <tr>
                                             <th className="p-3 font-extrabold border-b border-border text-gray-600">Plan</th>
                                             <th className="p-3 font-extrabold border-b border-border text-gray-600 whitespace-nowrap">Price</th>
-                                            <th className="p-3 font-extrabold border-b border-border text-right text-gray-600">Savings*</th>
+                                            <th className="p-3 font-extrabold border-b border-border text-right text-gray-600">Badge</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
-                                        {kit.pricing.weekly > 0 && (
+                                        {kit.pricingPlans?.filter(p => p.active).map((plan, idx) => {
+                                            const isLast = idx === (kit.pricingPlans?.filter(p => p.active).length || 1) - 1;
+                                            return (
+                                                <tr key={plan.id} className={isLast ? "bg-gradient-to-r from-marigold/10 to-marigold/5 hover:from-marigold/20 hover:to-marigold/10 transition-colors border-l-4 border-l-marigold" : "hover:bg-muted/10 transition-colors"}>
+                                                    <td className={`p-3 font-semibold ${isLast ? 'font-black text-maroon-dark' : 'text-gray-800'}`}>
+                                                        {plan.label}
+                                                        {isLast && <span className="block mt-0.5 text-[8px] bg-maroon text-white px-1.5 py-0.5 rounded uppercase tracking-widest w-fit">Best Value</span>}
+                                                    </td>
+                                                    <td className={`p-3 ${isLast ? 'font-black text-maroon-dark' : 'font-medium'}`}>₹{plan.price}</td>
+                                                    <td className={`p-3 text-right ${isLast ? 'font-black text-green-700' : 'text-muted-foreground font-medium'}`}>
+                                                        {plan.badge || '-'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {kit.pricing.one_time > 0 && (
                                             <tr className="hover:bg-muted/10 transition-colors">
-                                                <td className="p-3 font-semibold text-gray-800">Weekly</td>
-                                                <td className="p-3 font-medium">₹{kit.pricing.weekly}<span className="text-[10px] text-muted-foreground">/wk</span></td>
+                                                <td className="p-3 font-semibold text-gray-800">One-Time Purchase</td>
+                                                <td className="p-3 font-medium">₹{kit.pricing.one_time}</td>
                                                 <td className="p-3 text-right text-muted-foreground font-medium">-</td>
-                                            </tr>
-                                        )}
-                                        {kit.pricing.monthly > 0 && (
-                                            <tr className="hover:bg-muted/10 transition-colors">
-                                                <td className="p-3 font-semibold text-gray-800">Monthly</td>
-                                                <td className="p-3 font-medium">₹{kit.pricing.monthly}<span className="text-[10px] text-muted-foreground">/mo</span></td>
-                                                <td className="p-3 text-right font-black text-spiritual-green">
-                                                    {kit.pricing.weekly > 0 ? `${Math.round((1 - (kit.pricing.monthly / (kit.pricing.weekly * 4))) * 100)}% Off` : '-'}
-                                                </td>
-                                            </tr>
-                                        )}
-                                        {kit.pricing.quarterly > 0 && (
-                                            <tr className="hover:bg-muted/10 transition-colors">
-                                                <td className="p-3 font-semibold text-gray-800">Quarterly</td>
-                                                <td className="p-3 font-medium">₹{kit.pricing.quarterly}<span className="text-[10px] text-muted-foreground">/qtr</span></td>
-                                                <td className="p-3 text-right font-black text-spiritual-green">
-                                                    {kit.pricing.weekly > 0 ? `${Math.round((1 - (kit.pricing.quarterly / (kit.pricing.weekly * 12))) * 100)}% Off` : '-'}
-                                                </td>
-                                            </tr>
-                                        )}
-                                        {kit.pricing.yearly > 0 && (
-                                            <tr className="bg-gradient-to-r from-marigold/10 to-marigold/5 hover:from-marigold/20 hover:to-marigold/10 transition-colors border-l-4 border-l-marigold">
-                                                <td className="p-3 font-black text-maroon-dark">
-                                                    Yearly
-                                                    <span className="block mt-0.5 text-[8px] bg-maroon text-white px-1.5 py-0.5 rounded uppercase tracking-widest w-fit">Best Value</span>
-                                                </td>
-                                                <td className="p-3 font-black text-maroon-dark">₹{kit.pricing.yearly}<span className="text-[10px] text-maroon/70">/yr</span></td>
-                                                <td className="p-3 text-right font-black text-green-700 text-base">
-                                                    {kit.pricing.weekly > 0 ? `${Math.round((1 - (kit.pricing.yearly / (kit.pricing.weekly * 52))) * 100)}% Off` : '-'}
-                                                </td>
                                             </tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
-                            <p className="text-[9px] text-muted-foreground mt-3 text-center uppercase tracking-wide font-medium">* Savings calculated vs standard weekly plan</p>
+                            <p className="text-[9px] text-muted-foreground mt-3 text-center uppercase tracking-wide font-medium">* Compare plans and choose what works best for you</p>
                         </div>
                     )}
                 </div>
@@ -657,10 +665,10 @@ const PoojaKitDetail = () => {
                             {/* Subscription Selection Box */}
                             <div className="bg-white rounded-2xl p-6 border border-border shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-6">
                                 <h2 className="text-xl font-heading font-bold text-gray-900 mb-1 flex items-center gap-2">
-                                    {kit.category === 'daily' ? 'Choose Your Plan' : 'Pricing'}
+                                    {kit.pricingPlans?.some(p => p.active) ? 'Choose Your Plan' : 'Pricing'}
                                 </h2>
-                                {kit.category === 'daily' && (
-                                    <p className="text-sm text-gray-500 mb-5">Subscribe & save up to 49% with longer plans.</p>
+                                {kit.pricingPlans?.some(p => p.active) && (
+                                    <p className="text-sm text-gray-500 mb-5">Subscribe & save more with longer plans.</p>
                                 )}
 
                                 <div className="space-y-3 mb-6">
@@ -674,18 +682,18 @@ const PoojaKitDetail = () => {
                                             savingsPercent = Math.round((1 - (currentPrice / Number(kit.marketPrice))) * 100);
                                         }
 
-                                        // For non-daily kits with market price, show discount
-                                        if (kit.category !== 'daily' && option.id === 'one_time' && kit.marketPrice && kit.offerPrice && kit.marketPrice > kit.offerPrice) {
+                                        // For one-time purchase with offer price, show discount
+                                        if (option.id === 'one_time' && kit.marketPrice && kit.offerPrice && kit.marketPrice > kit.offerPrice) {
                                             savingsPercent = Math.round((1 - (kit.offerPrice / kit.marketPrice)) * 100);
                                         }
 
                                         return (
                                             <label
                                                 key={option.id}
-                                                className={`flex items - start justify - between p - 4 rounded - xl border - 2 cursor - pointer transition - all duration - 300 relative overflow - hidden ${isSelected
+                                                className={`flex items-start justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 relative overflow-hidden ${isSelected
                                                     ? 'border-maroon bg-maroon/5 shadow-md'
                                                     : 'border-border hover:border-maroon/30 hover:bg-muted/20 hover:shadow-sm'
-                                                    } `}
+                                                    }`}
                                                 onClick={() => setSelectedPlan(option.id)}
                                             >
                                                 {/* Best Value Highlight Background */}
@@ -694,21 +702,21 @@ const PoojaKitDetail = () => {
                                                 )}
 
                                                 <div className="flex items-start gap-4 relative z-10 w-full">
-                                                    <div className={`w - 6 h - 6 mt - 0.5 rounded - full border - 2 flex items - center justify - center shrink - 0 transition - colors ${isSelected ? 'border-maroon bg-maroon' : 'border-gray-300'
-                                                        } `}>
+                                                    <div className={`w-6 h-6 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'border-maroon bg-maroon' : 'border-gray-300'
+                                                        }`}>
                                                         {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                                                     </div>
 
                                                     <div className="flex-1">
                                                         <div className="flex items-center flex-wrap gap-2 mb-1">
                                                             <span className={`font-bold text-base ${isSelected ? 'text-maroon-dark' : 'text-gray-900'}`}>
-                                                                {kit.category === 'daily' ? option.label : kit.name}
+                                                                {option.label}
                                                             </span>
-                                                            {option.badge && kit.category === 'daily' && (
-                                                                <span className={`text - [10px] font - black px - 2 py - 0.5 rounded uppercase tracking - wider ${option.id === 'yearly'
+                                                            {option.badge && (
+                                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${option.id === 'yearly'
                                                                     ? 'bg-marigold text-maroon-dark animate-pulse shadow-sm'
                                                                     : 'bg-marigold/20 text-maroon-dark'
-                                                                    } `}>
+                                                                    }`}>
                                                                     {option.badge}
                                                                 </span>
                                                             )}
@@ -718,16 +726,13 @@ const PoojaKitDetail = () => {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <span className={`text-sm tracking-wide ${isSelected ? 'text-maroon/80 font-medium' : 'text-muted-foreground'}`}>
-                                                            {kit.category === 'daily' ? (option as any).desc || kit.description : kit.description}
-                                                        </span>
                                                     </div>
 
                                                     <div className="text-right shrink-0">
                                                         <div className={`text-xl font-black ${isSelected ? 'text-maroon-dark' : 'text-gray-900'}`}>
                                                             ₹{currentPrice}
                                                         </div>
-                                                        {kit.category !== 'daily' && kit.marketPrice && Number(kit.marketPrice) > currentPrice && (
+                                                        {kit.marketPrice && Number(kit.marketPrice) > currentPrice && (
                                                             <div className="text-sm text-muted-foreground line-through">
                                                                 ₹{kit.marketPrice}
                                                             </div>

@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import axios from "axios";
+import { API_URL } from "@/config";
 
 // We don't need mock data for pooja details here anymore, we will primarily rely on location.state
 
@@ -86,7 +88,7 @@ const Checkout = () => {
     const [couponCode, setCouponCode] = useState("");
     const [useCoins, setUseCoins] = useState(false);
 
-    const { isAuthenticated, openAuthModal } = useAuth();
+    const { isAuthenticated, openAuthModal, token } = useAuth();
     const [selectedAddress, setSelectedAddress] = useState(1);
 
     // Redirect if not logged in
@@ -129,9 +131,48 @@ const Checkout = () => {
             setCurrentStep(prev => Math.max(prev - 1, 1));
         }
     };
-    const handlePayment = () => {
-        alert('Proceeding to Razorpay for ₹' + amountToPay);
-        // Integrate Razorpay here
+    const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+    const handlePayment = async () => {
+        const isKitOnly = orderItems.every(item => item.type === 'pooja-kit' || item.type === 'kit');
+
+        if (isKitOnly) {
+            // Save kit order to backend
+            setIsPlacingOrder(true);
+            try {
+                const kitItem = orderItems[0];
+                const authToken = token || localStorage.getItem('token');
+
+                await axios.post(
+                    `${API_URL.replace('/api', '/api/v1')}/kit-orders`,
+                    {
+                        kit: {
+                            kitId: kitItem.productId,
+                            title: kitItem.title,
+                            image: kitItem.image || '',
+                            category: 'kit'
+                        },
+                        plan: kitItem.selectedVersion
+                            ? { id: kitItem.selectedVersion.id, label: kitItem.selectedVersion.title, price: kitItem.price }
+                            : { id: 'one_time', label: (kitItem as any).planLabel || 'One-Time Purchase', price: kitItem.price },
+                        quantity: kitItem.quantity,
+                        totalAmount: grandTotal,
+                        deliveryDate: date ? date.toISOString() : undefined,
+                        deliverySlot: timeSlot.label,
+                        deliveryAddress: { line1: '12-4, Temple Road, Kukatpally', city: 'Hyderabad', state: 'Telangana', pincode: '500072' }
+                    },
+                    { headers: { Authorization: `Bearer ${authToken}` } }
+                );
+                navigate('/order-confirmed', { state: { title: kitItem.title, amount: grandTotal } });
+            } catch {
+                alert('Failed to place order. Please try again.');
+            } finally {
+                setIsPlacingOrder(false);
+            }
+        } else {
+            alert('Proceeding to Razorpay for ₹' + amountToPay);
+            // Integrate Razorpay here
+        }
     };
 
     return (
@@ -377,8 +418,8 @@ const Checkout = () => {
                                         <div className="text-sm">
                                             Amount to pay: <span className="text-xl font-bold">₹{amountToPay}</span>
                                         </div>
-                                        <Button onClick={handlePayment} className="bg-[#528FF0] hover:bg-[#3b7bed] text-white px-8 h-12 text-lg shadow-lg">
-                                            Pay Now
+                                        <Button onClick={handlePayment} disabled={isPlacingOrder} className="bg-[#528FF0] hover:bg-[#3b7bed] text-white px-8 h-12 text-lg shadow-lg">
+                                            {isPlacingOrder ? 'Placing Order...' : 'Pay Now'}
                                         </Button>
                                     </div>
                                 </div>
