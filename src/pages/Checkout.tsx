@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
     ArrowLeft, CheckCircle2, ChevronRight, MapPin,
     Calendar as CalendarIcon, Clock, CreditCard, ShieldCheck,
-    Star, Sparkles, Receipt, Home, Plus, Phone
+    Star, Sparkles, Receipt, Home, Plus, Phone, Loader2, Truck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -101,6 +101,14 @@ const Checkout = () => {
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 
+    // Delivery zone check state
+    const [deliveryCheck, setDeliveryCheck] = useState<{
+        serviceable: boolean;
+        zone?: { name: string; deliveryCharge: number; estimatedDays: string; freeDeliveryAbove: number | null; minOrderValue: number };
+        message?: string;
+    } | null>(null);
+    const [deliveryCheckLoading, setDeliveryCheckLoading] = useState(false);
+
     // Load saved addresses from localStorage
     useEffect(() => {
         const saved = localStorage.getItem('addresses');
@@ -111,6 +119,34 @@ const Checkout = () => {
             if (defaultAddr) setSelectedAddressId(defaultAddr.id);
         }
     }, []);
+
+    // Check delivery serviceability for a pincode
+    const checkDeliveryPincode = async (pincode: string) => {
+        if (!pincode || pincode.length !== 6) return;
+        setDeliveryCheckLoading(true);
+        try {
+            const res = await axios.get(`${API_URL.replace('/api', '/api/v1')}/delivery-zones/check/${pincode}`);
+            setDeliveryCheck(res.data);
+        } catch {
+            setDeliveryCheck({ serviceable: false, message: 'Failed to check delivery availability' });
+        } finally {
+            setDeliveryCheckLoading(false);
+        }
+    };
+
+    // Auto-check pincode when address is selected
+    useEffect(() => {
+        if (selectedAddressId) {
+            const addr = savedAddresses.find(a => a.id === selectedAddressId);
+            if (addr?.pincode) {
+                checkDeliveryPincode(addr.pincode);
+            } else {
+                setDeliveryCheck(null);
+            }
+        } else {
+            setDeliveryCheck(null);
+        }
+    }, [selectedAddressId, savedAddresses]);
 
     // Kit delivery config fetched from backend
     const [kitDeliveryConfig, setKitDeliveryConfig] = useState<{
@@ -176,7 +212,12 @@ const Checkout = () => {
         return acc + itemBasePrice + addonPrice;
     }, 0);
 
-    const grandTotal = subTotal + serviceFee - coinsDiscount - couponDiscount;
+    // Delivery charge from zone check
+    const deliveryCharge = deliveryCheck?.serviceable && deliveryCheck.zone
+        ? (deliveryCheck.zone.freeDeliveryAbove && subTotal >= deliveryCheck.zone.freeDeliveryAbove ? 0 : deliveryCheck.zone.deliveryCharge)
+        : 0;
+
+    const grandTotal = subTotal + serviceFee + deliveryCharge - coinsDiscount - couponDiscount;
     const advanceAmount = Math.ceil(grandTotal * 0.2); // 20% advance
 
     const amountToPay = paymentMode === 'full' ? grandTotal : advanceAmount;
@@ -505,9 +546,50 @@ const Checkout = () => {
                                     </>
                                 )}
 
+                                {/* Delivery Zone Check Result */}
+                                {selectedAddressId && (
+                                    <div className="mt-4">
+                                        {deliveryCheckLoading ? (
+                                            <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border border-border">
+                                                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                                <span className="text-sm text-muted-foreground">Checking delivery availability...</span>
+                                            </div>
+                                        ) : deliveryCheck?.serviceable ? (
+                                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                                                    <span className="text-sm font-bold text-green-700">Delivery available — {deliveryCheck.zone?.estimatedDays}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 ml-6 text-xs text-green-600">
+                                                    <span className="flex items-center gap-1">
+                                                        <Truck className="w-3 h-3" />
+                                                        {deliveryCheck.zone?.freeDeliveryAbove && subTotal >= deliveryCheck.zone.freeDeliveryAbove
+                                                            ? 'Free Delivery'
+                                                            : deliveryCheck.zone?.deliveryCharge === 0
+                                                                ? 'Free Delivery'
+                                                                : `Delivery: ₹${deliveryCheck.zone?.deliveryCharge}`
+                                                        }
+                                                    </span>
+                                                    {deliveryCheck.zone?.freeDeliveryAbove && subTotal < deliveryCheck.zone.freeDeliveryAbove && deliveryCheck.zone.deliveryCharge > 0 && (
+                                                        <span className="text-green-500">• Free above ₹{deliveryCheck.zone.freeDeliveryAbove}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : deliveryCheck ? (
+                                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="w-4 h-4 text-red-500 shrink-0" />
+                                                    <span className="text-sm font-medium text-red-700">{deliveryCheck.message || "We don't deliver to this area yet"}</span>
+                                                </div>
+                                                <p className="text-xs text-red-500 mt-1 ml-6">Please try a different address.</p>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                )}
+
                                 <div className="mt-8 flex justify-between">
                                     <Button variant="outline" onClick={prevStep}>Back</Button>
-                                    <Button onClick={nextStep} className="bg-spiritual-green hover:bg-spiritual-green/90 text-white px-8" disabled={!isAuthenticated || !selectedAddressId}>
+                                    <Button onClick={nextStep} className="bg-spiritual-green hover:bg-spiritual-green/90 text-white px-8" disabled={!isAuthenticated || !selectedAddressId || deliveryCheckLoading || (deliveryCheck !== null && !deliveryCheck.serviceable)}>
                                         Continue to Payment <ChevronRight className="w-4 h-4 ml-2" />
                                     </Button>
                                 </div>
@@ -659,6 +741,18 @@ const Checkout = () => {
                                         <span className="text-gray-600">Platform/Service Fee</span>
                                         <span className="font-medium">₹{serviceFee}</span>
                                     </div>
+                                    {deliveryCharge > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-600">Delivery Charge</span>
+                                            <span className="font-medium">₹{deliveryCharge}</span>
+                                        </div>
+                                    )}
+                                    {deliveryCheck?.serviceable && deliveryCharge === 0 && deliveryCheck.zone?.deliveryCharge !== undefined && (
+                                        <div className="flex justify-between text-green-600 font-medium">
+                                            <span>Delivery</span>
+                                            <span>FREE</span>
+                                        </div>
+                                    )}
                                     {useCoins && (
                                         <div className="flex justify-between text-green-600 font-medium">
                                             <span>BMS Coins Discount</span>
