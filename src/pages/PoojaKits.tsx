@@ -20,6 +20,7 @@ interface Kit {
     shortDescription: string;
     category: string;
     image?: string;
+    images?: string[];
     defaultRating?: number;
     reviewCount?: number;
     itemsIncluded: { id: number; text: string }[];
@@ -202,7 +203,7 @@ const PoojaKits = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredKits.map((kit, index) => {
                             const displayPrice = getKitPrice(kit);
-                            const imageUrl = getImageUrl(kit.image);
+                            const imageUrl = getImageUrl(kit.images?.[0] || kit.image);
 
                             return (
                                 <div
@@ -257,8 +258,19 @@ const PoojaKits = () => {
                                             <div>
                                                 {displayPrice > 0 && (
                                                     <>
-                                                        <div className="text-xl font-black text-maroon-dark">₹{displayPrice}</div>
-                                                        <div className="text-[10px] text-muted-foreground font-medium">Starting price</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="text-xl font-black text-maroon-dark">₹{displayPrice}</div>
+                                                            {kit.marketPrice && Number(kit.marketPrice) > displayPrice && (
+                                                                <div className="text-sm text-muted-foreground line-through">₹{kit.marketPrice}</div>
+                                                            )}
+                                                        </div>
+                                                        {kit.marketPrice && Number(kit.marketPrice) > displayPrice ? (
+                                                            <div className="text-[10px] text-green-600 font-bold">
+                                                                {Math.round((1 - displayPrice / Number(kit.marketPrice)) * 100)}% off
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-[10px] text-muted-foreground font-medium">Starting price</div>
+                                                        )}
                                                     </>
                                                 )}
                                             </div>

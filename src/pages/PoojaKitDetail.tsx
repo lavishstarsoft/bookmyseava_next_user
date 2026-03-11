@@ -27,12 +27,21 @@ interface BackendKit {
     shortDescription: string;
     category: string;
     image?: string;
+    images?: string[];
     defaultRating?: number;
     reviewCount?: number;
     itemsIncluded: { id: number; text: string }[];
     pricingPlans?: PricingPlan[];
     marketPrice?: number | string;
     offerPrice?: number | string;
+    badges?: {
+        verifiedQuality?: boolean;
+        freeDelivery?: boolean;
+        premiumQuality?: boolean;
+        doorstepDelivery?: boolean;
+        panditCurated?: boolean;
+        easyCancel?: boolean;
+    };
 }
 
 // Normalized kit for UI
@@ -50,11 +59,22 @@ interface KitDisplay {
     pricingPlans?: PricingPlan[];
     marketPrice?: number;
     offerPrice?: number;
+    badges: {
+        verifiedQuality: boolean;
+        freeDelivery: boolean;
+        premiumQuality: boolean;
+        doorstepDelivery: boolean;
+        panditCurated: boolean;
+        easyCancel: boolean;
+    };
 }
 
 // Convert backend kit to display format
 const toDisplayKit = (kit: BackendKit): KitDisplay => {
-    const imageUrl = getImageUrl(kit.image) || "/images/poojas/deeparadhana.png";
+    const fallback = "/images/poojas/deeparadhana.png";
+    const allImages = kit.images?.length
+        ? kit.images.map(img => getImageUrl(img) || fallback)
+        : [getImageUrl(kit.image) || fallback];
 
     // Build pricing from pricingPlans or market/offer price
     const pricing: Record<string, number> = {};
@@ -65,13 +85,13 @@ const toDisplayKit = (kit: BackendKit): KitDisplay => {
         });
     } else {
         const price = Number(kit.offerPrice) || Number(kit.marketPrice) || 0;
-        pricing.default = price;
+        pricing.one_time = price;
     }
 
     return {
         name: kit.title,
-        image: imageUrl,
-        images: [imageUrl],
+        image: allImages[0],
+        images: allImages,
         description: kit.shortDescription || "Complete pooja kit with all essential items.",
         longDescription: kit.shortDescription || "A comprehensive pooja kit curated with care, containing all the essential items you need for an authentic and devotionally satisfying worship experience at home.",
         rating: kit.defaultRating || 4.7,
@@ -82,6 +102,14 @@ const toDisplayKit = (kit: BackendKit): KitDisplay => {
         pricingPlans: kit.pricingPlans,
         marketPrice: Number(kit.marketPrice) || 0,
         offerPrice: Number(kit.offerPrice) || 0,
+        badges: {
+            verifiedQuality: kit.badges?.verifiedQuality ?? true,
+            freeDelivery: kit.badges?.freeDelivery ?? true,
+            premiumQuality: kit.badges?.premiumQuality ?? true,
+            doorstepDelivery: kit.badges?.doorstepDelivery ?? true,
+            panditCurated: kit.badges?.panditCurated ?? true,
+            easyCancel: kit.badges?.easyCancel ?? true,
+        },
     };
 };
 
@@ -134,7 +162,7 @@ const PoojaKitDetail = () => {
 
                 // Select default plan
                 const activePlan = backendKit.pricingPlans?.find(p => p.active);
-                setSelectedPlan(activePlan?.id || "default");
+                setSelectedPlan(activePlan?.id || "one_time");
             } catch (err) {
                 console.error("Failed to fetch kit:", err);
                 setError("Failed to load kit details. Please try again.");
@@ -150,6 +178,15 @@ const PoojaKitDetail = () => {
             setExpandedSections({ about: true, items: true, savings: true, reviews: true });
         }
     }, [slug]);
+
+    // Set default selected plan for non-daily kits
+    useEffect(() => {
+        if (kit && !kit.pricingPlans?.find(p => p.id === selectedPlan)) {
+            if (kit.category !== 'daily') {
+                setSelectedPlan('one_time');
+            }
+        }
+    }, [kit, selectedPlan]);
 
 
     // Loading state
@@ -235,7 +272,7 @@ const PoojaKitDetail = () => {
     // Determine display subscription options based on category
     const displaySubscriptionOptions = kit.category === 'daily'
         ? (kit.pricingPlans?.filter(p => p.active) || [])
-        : [{ id: 'default', label: 'One-Time Purchase', badge: '' }];
+        : [{ id: 'one_time', label: 'One-Time Purchase', badge: '' }];
 
     const renderAccordions = () => (
         <>
@@ -256,22 +293,30 @@ const PoojaKitDetail = () => {
                         <p className="text-gray-600 leading-relaxed text-sm mb-6 mt-4 lg:mt-0">{kit.longDescription}</p>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-marigold/5 rounded-xl p-4 border border-marigold/20 text-center">
-                                <div className="text-2xl mb-1">🪔</div>
-                                <div className="text-xs font-bold text-gray-900">Premium Quality</div>
-                            </div>
-                            <div className="bg-spiritual-green/5 rounded-xl p-4 border border-spiritual-green/20 text-center">
-                                <div className="text-2xl mb-1">📦</div>
-                                <div className="text-xs font-bold text-gray-900">Doorstep Delivery</div>
-                            </div>
-                            <div className="bg-maroon/5 rounded-xl p-4 border border-maroon/20 text-center">
-                                <div className="text-2xl mb-1">👨‍🦳</div>
-                                <div className="text-xs font-bold text-gray-900">Pandit Curated</div>
-                            </div>
-                            <div className="bg-purple-50 rounded-xl p-4 border border-purple-100 text-center">
-                                <div className="text-2xl mb-1">🔄</div>
-                                <div className="text-xs font-bold text-gray-900">Easy Cancel</div>
-                            </div>
+                            {kit.badges.premiumQuality && (
+                                <div className="bg-marigold/5 rounded-xl p-4 border border-marigold/20 text-center">
+                                    <div className="text-2xl mb-1">🪔</div>
+                                    <div className="text-xs font-bold text-gray-900">Premium Quality</div>
+                                </div>
+                            )}
+                            {kit.badges.doorstepDelivery && (
+                                <div className="bg-spiritual-green/5 rounded-xl p-4 border border-spiritual-green/20 text-center">
+                                    <div className="text-2xl mb-1">📦</div>
+                                    <div className="text-xs font-bold text-gray-900">Doorstep Delivery</div>
+                                </div>
+                            )}
+                            {kit.badges.panditCurated && (
+                                <div className="bg-maroon/5 rounded-xl p-4 border border-maroon/20 text-center">
+                                    <div className="text-2xl mb-1">👨‍🦳</div>
+                                    <div className="text-xs font-bold text-gray-900">Pandit Curated</div>
+                                </div>
+                            )}
+                            {kit.badges.easyCancel && (
+                                <div className="bg-purple-50 rounded-xl p-4 border border-purple-100 text-center">
+                                    <div className="text-2xl mb-1">🔄</div>
+                                    <div className="text-xs font-bold text-gray-900">Easy Cancel</div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -570,13 +615,37 @@ const PoojaKitDetail = () => {
                                         <span className="font-bold text-gray-900">{kit.rating}</span>
                                         <span className="text-muted-foreground text-xs">({kit.reviewCount} reviews)</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 text-xs text-green-700 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                                        <ShieldCheck className="w-4 h-4" /> Verified Quality
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-xs text-blue-700 font-bold bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                                        <Package className="w-4 h-4" /> Free Delivery
-                                    </div>
+                                    {kit.badges.verifiedQuality && (
+                                        <div className="flex items-center gap-1.5 text-xs text-green-700 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                                            <ShieldCheck className="w-4 h-4" /> Verified Quality
+                                        </div>
+                                    )}
+                                    {kit.badges.freeDelivery && (
+                                        <div className="flex items-center gap-1.5 text-xs text-blue-700 font-bold bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                                            <Package className="w-4 h-4" /> Free Delivery
+                                        </div>
+                                    )}
                                 </div>
+
+                                {/* Prominent Price Display */}
+                                {(kit.offerPrice || kit.marketPrice) ? (
+                                    <div className="flex items-baseline flex-wrap gap-3 mb-4">
+                                        <span className="text-3xl font-black text-maroon-dark">
+                                            ₹{kit.offerPrice || kit.marketPrice}
+                                        </span>
+                                        {kit.marketPrice && kit.offerPrice && Number(kit.marketPrice) > Number(kit.offerPrice) && (
+                                            <>
+                                                <span className="text-lg text-muted-foreground line-through">
+                                                    MRP ₹{kit.marketPrice}
+                                                </span>
+                                                <span className="text-sm font-bold text-green-600 bg-green-50 px-2.5 py-0.5 rounded-full border border-green-100">
+                                                    {Math.round((1 - Number(kit.offerPrice) / Number(kit.marketPrice)) * 100)}% off
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
+                                ) : null}
+
                                 <p className="text-gray-600 leading-relaxed font-medium">{kit.description}</p>
                             </div>
 
