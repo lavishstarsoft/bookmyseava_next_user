@@ -26,6 +26,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Favorites from "./pages/Favorites";
 import Cart from "./pages/Cart";
 import OrderConfirmed from "./pages/OrderConfirmed";
+import VerifyPackage from "./pages/VerifyPackage";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,7 +73,9 @@ const App = () => (
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:id" element={<BlogPost />} />
+                  <Route path="/verify-package" element={<VerifyPackage />} />
                   <Route path="/profile" element={<Profile />} />
+
                   <Route path="/about" element={<About />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
