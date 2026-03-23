@@ -294,6 +294,38 @@ const Checkout = () => {
     };
 
     const handlePayment = async () => {
+        // Validate authentication
+        const authToken = token || localStorage.getItem('token');
+        if (!authToken) {
+            alert('Please login to place an order');
+            openAuthModal();
+            return;
+        }
+
+        // Validate address selection
+        if (!selectedAddressId) {
+            alert('Please select or add a delivery address');
+            return;
+        }
+
+        const selectedAddr = savedAddresses.find(a => a.id === selectedAddressId);
+        if (!selectedAddr) {
+            alert('Please select a valid delivery address');
+            return;
+        }
+
+        // Validate address details
+        if (!selectedAddr.houseNo || !selectedAddr.city || !selectedAddr.state || !selectedAddr.pincode) {
+            alert('Please provide complete address details (house no, city, state, pincode)');
+            return;
+        }
+
+        // Check delivery serviceability
+        if (deliveryCheck && !deliveryCheck.serviceable) {
+            alert('Delivery is not available to this pincode. Please select a different address.');
+            return;
+        }
+
         const isKitOnly = orderItems.every(item => item.type === 'pooja-kit' || item.type === 'kit');
 
         if (isKitOnly) {
@@ -301,7 +333,6 @@ const Checkout = () => {
             setIsPlacingOrder(true);
             try {
                 const kitItem = orderItems[0];
-                const authToken = token || localStorage.getItem('token');
 
                 await axios.post(
                     `${API_URL.replace('/api', '/api/v1')}/kit-orders`,
@@ -320,22 +351,19 @@ const Checkout = () => {
                         coupon: couponApplied ? { code: couponApplied.code, discountType: couponApplied.discountType, discountValue: couponApplied.discountValue, discountAmount: couponDiscount } : undefined,
                         deliveryDate: date ? date.toISOString() : undefined,
                         deliverySlot: timeSlot.label,
-                        deliveryAddress: (() => {
-                            const addr = savedAddresses.find(a => a.id === selectedAddressId);
-                            if (!addr) return {};
-                            return {
-                                line1: addr.houseNo + (addr.area ? `, ${addr.area}` : '') + (addr.landmark ? `, ${addr.landmark}` : ''),
-                                city: addr.city,
-                                state: addr.state,
-                                pincode: addr.pincode
-                            };
-                        })()
+                        deliveryAddress: {
+                            line1: selectedAddr.houseNo + (selectedAddr.area ? `, ${selectedAddr.area}` : '') + (selectedAddr.landmark ? `, ${selectedAddr.landmark}` : ''),
+                            city: selectedAddr.city,
+                            state: selectedAddr.state,
+                            pincode: selectedAddr.pincode
+                        }
                     },
                     { headers: { Authorization: `Bearer ${authToken}` } }
                 );
                 navigate('/order-confirmed', { state: { title: kitItem.title, amount: grandTotal } });
-            } catch {
-                alert('Failed to place order. Please try again.');
+            } catch (error: any) {
+                const errorMsg = error?.response?.data?.message || 'Failed to place order. Please try again.';
+                alert(errorMsg);
             } finally {
                 setIsPlacingOrder(false);
             }
@@ -679,8 +707,12 @@ const Checkout = () => {
                                         <div className="text-sm">
                                             Amount to pay: <span className="text-xl font-bold">₹{amountToPay}</span>
                                         </div>
-                                        <Button onClick={handlePayment} disabled={isPlacingOrder} className="bg-[#528FF0] hover:bg-[#3b7bed] text-white px-8 h-12 text-lg shadow-lg">
-                                            {isPlacingOrder ? 'Placing Order...' : 'Pay Now'}
+                                        <Button
+                                            onClick={handlePayment}
+                                            disabled={isPlacingOrder || !selectedAddressId || !isAuthenticated}
+                                            className="bg-[#528FF0] hover:bg-[#3b7bed] text-white px-8 h-12 text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isPlacingOrder ? 'Placing Order...' : !isAuthenticated ? 'Login to Order' : !selectedAddressId ? 'Select Address' : 'Pay Now'}
                                         </Button>
                                     </div>
                                 </div>

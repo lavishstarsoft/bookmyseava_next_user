@@ -601,3 +601,8 @@
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }
+/* Force white text on maroon buttons */
+.bg-maroon, .bg-maroon-dark, .bg-\[\#8D0303\] {
+    color: white !important;
+}
+

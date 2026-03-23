@@ -82,6 +82,8 @@ interface KitOrder {
     status: 'pending' | 'confirmed' | 'out_for_delivery' | 'delivered' | 'cancelled';
     paymentStatus: 'pending' | 'paid' | 'failed';
     createdAt: string;
+    trackingId?: string;
+    courierName?: string;
 }
 
 const Profile = () => {
@@ -652,6 +654,26 @@ const Profile = () => {
                                                                         </span>
                                                                     )}
                                                                 </div>
+
+                                                                {/* Tracking Info */}
+                                                                {(order.trackingId || order.courierName) && (
+                                                                    <div className="mt-2 p-2 bg-slate-50 rounded-md border border-slate-100 text-sm">
+                                                                        {order.courierName && (
+                                                                            <div className="flex items-center gap-2 mb-1">
+                                                                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-20">Courier</span>
+                                                                                <span className="text-slate-900 font-medium">{order.courierName}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {order.trackingId && (
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider w-20">Tracking #</span>
+                                                                                <span className="font-mono text-slate-700 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-xs">
+                                                                                    {order.trackingId}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
 
                                                                 {/* Address */}
                                                                 {order.deliveryAddress && (

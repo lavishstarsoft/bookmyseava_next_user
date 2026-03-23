@@ -25,6 +25,7 @@ import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Favorites from "./pages/Favorites";
 import Cart from "./pages/Cart";
+import OrderConfirmed from "./pages/OrderConfirmed";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,7 @@ const App = () => (
                   <Route path="/pooja-kit/:slug" element={<PoojaKitDetail />} />
                   <Route path="/live-darshan" element={<LiveDarshan />} />
                   <Route path="/favorites" element={<Favorites />} />
+                  <Route path="/order-confirmed" element={<OrderConfirmed />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:id" element={<BlogPost />} />
